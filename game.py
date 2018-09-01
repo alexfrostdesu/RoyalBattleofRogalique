@@ -68,6 +68,7 @@ class Game:
             player_input = input()
             if player_input == 'I':
                 playerchar.print_inventory()
+                Game.adventure(playerchar)
             elif player_input == 'N':
                 PrintMessage('end_game')
                 break
