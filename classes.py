@@ -14,14 +14,15 @@ class Character:
 
     def __init__(self):
         self._cls = self.__class__.__name__
-        self._maxhp = self._hp = self.default_hp
-        self._maxmp = self._mp = self.default_mp
+        self._defense = 1
+        self._inventory = {'Armor': None, 'Weapon': None, 'Helm': None, 'Boots': None, 'Ring': None}
+        self._maxhp = self._hp = self.default_hp + self.get_hp_modifier()
+        self._maxmp = self._mp = self.default_mp + self.get_mp_modifier()
         self._attack = self.default_attack
         self._lvl = self.default_lvl
         self._exp_to_next_lvl = self.default_exp_to_next_lvl
         self._exp = self.default_exp
-        self._inventory = {'Armor': None, 'Weapon': None, 'Helm': None, 'Boots': None, 'Ring': None}
-        self._defense = 1
+
 
     def get_class(self):
         """
@@ -41,17 +42,23 @@ class Character:
         """
         return self._hp
 
-    def get_maxhp(self):
+    def get_hp_modifier(self):
         """
-        Returns character's maxhp
+        Returns character's hp modifier
         """
-        full_hp = self._maxhp
+        self._hp_modifier = 0
         for i in range(0, len(self._inventory)):
             slot = list(self._inventory)[i]
             item = self._inventory[slot]
             if item is not None:
-                full_hp += item.get_bonus_hp()
-        return full_hp
+                self._hp_modifier += item.get_bonus_hp()
+        return self._hp_modifier
+
+    def get_maxhp(self):
+        """
+        Returns character's maxhp
+        """
+        return self._maxhp + self.get_hp_modifier()
 
     def set_hp(self, hp):
         """
@@ -68,17 +75,23 @@ class Character:
         """
         return self._mp
 
-    def get_maxmp(self):
+    def get_mp_modifier(self):
         """
-        Returns character's hp
+        Returns character's hp modifier
         """
-        full_mp = self._maxmp
+        self._mp_modifier = 0
         for i in range(0, len(self._inventory)):
             slot = list(self._inventory)[i]
             item = self._inventory[slot]
             if item is not None:
-                full_mp += item.get_bonus_mp()
-        return full_mp
+                self._mp_modifier += item.get_bonus_mp()
+        return self._mp_modifier
+
+    def get_maxmp(self):
+        """
+        Returns character's hp
+        """
+        return self._maxmp + self.get_hp_modifier()
 
     def set_mp(self, mp):
         """
@@ -335,17 +348,6 @@ class Warrior(Character):
         return full_defense
 
 
-class Monster(Character):
-    # default_lvl_mult = 1
-
-    def __init__(self, lvl_mult=1):
-        super().__init__()
-        self._lvl_mult = lvl_mult / math.sqrt(lvl_mult)
-        self._maxhp = self._hp = (random.randint(20, 40) * self._lvl_mult)
-        self._mp = self._maxmp = (random.randint(1, 50) * self._lvl_mult)
-        self._attack = (random.randint(1, 20) * self._lvl_mult)
-
-
 class Rogue(Character):
     def __init__(self, crit_chance=0.2, evade_chance=0.2):
         super().__init__()
@@ -407,18 +409,28 @@ class Rogue(Character):
         stats_msg = super()._get_stats() + f", Dodge: {self._evade_chance * 100:1.0f}%"
         print(stats_msg)
 
+
+class Monster(Character):
+    # default_lvl_mult = 1
+
+    def __init__(self, lvl_mult=1):
+        super().__init__()
+        self._lvl_mult = lvl_mult / math.sqrt(lvl_mult)
+        self._maxhp = self._hp = (random.randint(20, 40) * self._lvl_mult)
+        self._mp = self._maxmp = (random.randint(1, 1) * self._lvl_mult)
+        self._attack = (random.randint(1, 20) * self._lvl_mult)
+
+
 # test = Mage()
-# print(test.get_defence_modifier())
-# test.set_defense(2)
-# print(test.get_defence_modifier())
-# test.set_defense(3)
-# print(test.get_defence_modifier())
-# test.set_defense(4)
-# print(test.get_defence_modifier())
-# test.set_defense(5)
-# print(test.get_defence_modifier())
-# # test.add_item(CommonItem())
-# # test.add_item(CommonItem())
-# # test.print_inventory()
-# # print(test.get_attack())
-# # print(test.get_full_attack())
+# print(test.get_hp())
+# print(test.get_maxhp())
+# test.add_item(CommonItem())
+# test.add_item(CommonItem())
+# test.add_item(CommonItem())
+# test.add_item(CommonItem())
+# test.print_inventory()
+# print(test.get_hp())
+# print(test.get_maxhp())
+# test.lvlup()
+# print(test.get_hp())
+# print(test.get_maxhp())

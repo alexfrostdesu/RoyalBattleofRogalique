@@ -19,11 +19,9 @@ class Game:
         Game.adventure(playerchar)
 
     @staticmethod
-    def battle_encounter(attacker, defender):
+    def battle_until_death(attacker, defender):
         """
         Takes attacker's and defender's characters and battles them until one of them is dead
-        attacker is attacking first
-        returns the winner
         """
         while attacker.is_alive() and defender.is_alive():
             attacker.deal_damage(defender)
@@ -34,6 +32,18 @@ class Game:
             if not attacker.is_alive():
                 PrintMessage('won_C', defender)
                 break
+
+    @staticmethod
+    def battle_encounter(playerchar, enemy, first_attack=False):
+        """
+        Takes playerchar's and enemy's characters and battles them until one of them is dead
+        First attack determined by first_attack
+        Grants player with random item and exp from monster
+        """
+        if first_attack:
+            Game.battle_until_death(playerchar, enemy)
+        else:
+            Game.battle_until_death(enemy, playerchar)
         if not playerchar.is_alive():
             PrintMessage('dead')
             PrintMessage('end_game')
@@ -55,6 +65,10 @@ class Game:
                 print("Would you like to equip item? (Y/N)")
                 if input() == 'Y':
                     playerchar.add_item(item)
+            playerchar.add_exp(enemy.get_maxhp())
+            PrintMessage('stats')
+            playerchar.print_stats()
+            playerchar.print_exp_lvl()
 
     @staticmethod
     def adventure(playerchar):
@@ -63,12 +77,12 @@ class Game:
         Breaks on death or N input
         """
         while playerchar.is_alive():
-            playerchar.print_exp_lvl()
             PrintMessage('find_enemy')
             player_input = input()
             if player_input == 'I':
                 playerchar.print_inventory()
                 Game.adventure(playerchar)
+                break
             elif player_input == 'N':
                 PrintMessage('end_game')
                 break
@@ -79,28 +93,24 @@ class Game:
                     enemy.print_stats()
                     PrintMessage('attack_enemy')
                     if input() == 'Y':
-                        Game.battle_encounter(playerchar, enemy)
+                        Game.battle_encounter(playerchar, enemy, True)
                     else:
                         Game.adventure(playerchar)
+                        break
 
                 else:
                     PrintMessage('enemy_attack_C', enemy)
                     enemy.print_stats()
                     Game.battle_encounter(enemy, playerchar)
-                if not playerchar.is_alive():
-                    break
-            playerchar.add_exp(enemy.get_maxhp())
-            PrintMessage('stats')
-            playerchar.print_stats()
 
-# test = Mage()
-# test.get_inventory()['Ring'].print_stats()
 
 Game.game_start()
 
 # TODO skills: Mage Fireball
 # TODO skills: Rogue Confusion
 # TODO enemies: Boss Enemy
+# TODO enemies: Dark Shadow
+# TODO inventory: REDO
 # TODO items: Rare Items
 # TODO game: save state
 # TODO game: console choice
