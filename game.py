@@ -12,7 +12,6 @@ class Game:
         """
         PrintMessage('start_game')
         global playerchar
-        global playerstatus
         playerchar = eval("{}()".format(input()))
         PrintMessage('stats')
         playerchar.print_stats()
@@ -101,7 +100,7 @@ class Game:
                 else:
                     PrintMessage('enemy_attack_C', enemy)
                     enemy.print_stats()
-                    Game.battle_encounter(enemy, playerchar)
+                    Game.battle_encounter(playerchar, enemy, False)
 
 
 Game.game_start()
