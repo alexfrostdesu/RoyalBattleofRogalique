@@ -1,6 +1,5 @@
 import random
 
-
 class Item:
     def __init__(self, item_name, bonus_attack=0, bonus_hp=0, bonus_mp=0, bonus_defence=0):
         self._name = item_name
@@ -23,6 +22,12 @@ class Item:
 
     def get_type(self):
         return self._type
+
+    def set_type(self, new_type):
+        """
+        Takes new value for item's type and sets it
+        """
+        self._name = new_type
 
     def get_bonus_attack(self):
         """
@@ -81,19 +86,43 @@ class Item:
 
 
 class CommonItem(Item):
-    def __init__(self):
-        player_lvl_bonus = random.randint(1, 1)  # playerchar.getlvl())
-        item_dict = {'Armor': (0, random.randint(0, 10), random.randint(0, 10), random.randint(0, 5) + player_lvl_bonus),
-                     'Weapon': (random.randint(0, 5), 0, 0, 0),
-                     'Helm': (0, random.randint(0, 5), random.randint(0, 5), random.randint(0, 3) + player_lvl_bonus),
-                     'Boots': (0, random.randint(0, 5), random.randint(0, 0), random.randint(0, 2) + player_lvl_bonus),
-                     'Ring': (random.randint(0, 5), random.randint(0, 20), random.randint(0, 20), 0)
-                     }
-        item_name = self._type = random.choice(list(item_dict))
-        item_stats = item_dict[item_name]
+    def __init__(self, lvl):
+        player_lvl_bonus = random.randint(1, lvl)
+        #                     ATTACK || HP || MP || DEFENSE
+        self._item_dict = {'Armor': (0, 10, 2, 5 + player_lvl_bonus),
+                     'Weapon': (5 + player_lvl_bonus, 0, 2, 0),
+                     'Helm': (0, 5, 2, 5),
+                     'Boots': (0, 10, 2, 2),
+                     'Ring': (5, 20, 5, 0)
+                           }
+        item_name = self._type = random.choice(list(self._item_dict))
+        item_stats = list([random.randint(0, i) for i in self._item_dict[item_name]])
         item_name = "Common " + item_name
         super().__init__(item_name, *item_stats)
 
+
+class RareItem(Item):
+    def __init__(self, lvl):
+        player_lvl_bonus = random.randint(0, lvl+5)
+        #                     ATTACK || HP || MP || DEFENSE
+        self._item_dict = {'Armor': (0, 20, 4, 10 + player_lvl_bonus),
+                           'Weapon': (10 + player_lvl_bonus, 0, 4, 0),
+                           'Helm': (0, 10, 4, 5),
+                           'Boots': (0, 20, 4, 4),
+                           'Ring': (10, 30, 10, 0)
+                           }
+        self._affixlist = ['of Damage', 'of Vitality', 'of Magic', 'of Defence', 'of Random']
+        item_name = self._type = random.choice(list(self._item_dict))
+        item_affix = random.choice(self._affixlist)
+        item_stats = list([random.randint(0, i) for i in self._item_dict[item_name]])
+        if item_affix != 'of Random':
+            item_stats[self._affixlist.index(item_affix)] += player_lvl_bonus
+        else:
+            item_stats = (random.randint(0, 10), random.randint(0, 30), random.randint(0, 10), random.randint(0, 10))
+        item_name = f"Rare {self._type} {item_affix}"
+        super().__init__(item_name, *item_stats)
+
+RareItem(5).print_stats()
 
 # item_dict = {'Armor': None,
 #              'Weapon': None,

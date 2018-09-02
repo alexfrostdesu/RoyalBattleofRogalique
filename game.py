@@ -4,6 +4,7 @@ import random
 
 
 class Game:
+
     @staticmethod
     def game_start():
         """
@@ -54,8 +55,17 @@ class Game:
                 item_healing = random.randint(10, 30)
                 PrintMessage('healed_CA', playerchar, item_healing)
                 playerchar.set_hp(round(playerchar.get_hp() + item_healing))
+            if enemy.get_trophy() is not None:
+                PrintMessage('found_item_I', enemy.get_trophy())
+                enemy.get_trophy().print_stats()
+                if playerchar.get_inventory()[enemy.get_trophy().get_type()]:
+                    print("Your Item:")
+                    playerchar.get_inventory()[enemy.get_trophy().get_type()].print_stats()
+                print("Would you like to equip item? (Y/N)")
+                if input() == 'Y':
+                    playerchar.add_item(enemy.get_trophy())
             if random.randint(1, 6) > 4:
-                item = CommonItem()
+                item = CommonItem(playerchar.get_lvl())
                 PrintMessage('found_item_I', item)
                 item.print_stats()
                 if playerchar.get_inventory()[item.get_type()]:
@@ -86,8 +96,11 @@ class Game:
                 PrintMessage('end_game')
                 break
             else:
-                enemy = Monster(playerchar.get_lvl())
-                if random.random() > 0.5:
+                if random.random() < 0.6:
+                    if random.random() < 0.3 and playerchar.get_lvl() >= 4:
+                        enemy = GreaterMonster(playerchar.get_lvl())
+                    else:
+                        enemy = Monster(playerchar.get_lvl())
                     PrintMessage('see_enemy_C', enemy)
                     enemy.print_stats()
                     PrintMessage('attack_enemy')
@@ -98,19 +111,23 @@ class Game:
                         break
 
                 else:
+                    enemy = Monster(playerchar.get_lvl())
                     PrintMessage('enemy_attack_C', enemy)
                     enemy.print_stats()
                     Game.battle_encounter(playerchar, enemy, False)
 
 
-Game.game_start()
-
+# TODO enemies: Boss Enemy
+# TODO items: new random drop system
+# TODO mp -> mf for skills
 # TODO skills: Mage Fireball
 # TODO skills: Rogue Confusion
-# TODO enemies: Boss Enemy
 # TODO enemies: Dark Shadow
-# TODO inventory: REDO
-# TODO items: Rare Items
 # TODO game: save state
-# TODO game: console choice
-# TODO mp: whatever the fuck i can do
+# TODO game: console choice?
+
+
+if __name__ == '__main__':
+    Game.game_start()
+    global playerchar
+

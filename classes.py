@@ -6,7 +6,7 @@ import math
 
 class Character:
     default_hp = 100
-    default_mp = 100
+    default_mp = 10
     default_attack = 10
     default_exp = 0
     default_lvl = 1
@@ -121,7 +121,8 @@ class Character:
         """
         Prints character's current level, exp and exp needed for next level
         """
-        print(f"Current Level: {self._lvl:1.0f}, Current Experience: {self._exp:1.0f}, Next Level: {self._exp_to_next_lvl:1.0f}")
+        print(
+            f"Current Level: {self._lvl:1.0f}, Current Experience: {self._exp:1.0f}, Next Level: {self._exp_to_next_lvl:1.0f}")
 
     def add_exp(self, exp):
         """
@@ -194,7 +195,7 @@ class Character:
         if self.get_defense() > 2:
             return math.log10(math.sqrt(self.get_defense()))
         else:
-            return self.get_defense()/20
+            return self.get_defense() / 20
 
     def take_damage(self, other, damage):
         """
@@ -208,8 +209,8 @@ class Character:
         """
         Reduces other character's hp by self's attack
         """
-        redaction = 1 - other.get_defence_modifier()
-        other.take_damage(self, self.get_attack() * redaction)
+        reduction = 1 - other.get_defence_modifier()
+        other.take_damage(self, self.get_attack() * reduction)
 
     def _get_stats(self):
         """
@@ -270,6 +271,14 @@ class Mage(Character):
         self._es = self._max_es
         super().lvlup()
 
+    def add_item(self, item):
+        """
+        Adds an item to character inventory
+        """
+        super().add_item(item)
+        if item.get_type() == 'Weapon':
+            item.set_type('Wand')
+
     def take_damage(self, other, damage):
         """
         Takes other character's attack and reduces self es or/and hp by it
@@ -313,6 +322,14 @@ class Warrior(Character):
         """
         blood_defence_bonus = math.sqrt(self.get_maxhp() - self._hp) / 1.4
         return self._defense + self._defense_modifier + blood_defence_bonus
+
+    def add_item(self, item):
+        """
+        Adds an item to character inventory
+        """
+        super().add_item(item)
+        if item.get_type() == 'Weapon':
+            item.set_type('Sword')
 
 
 class Rogue(Character):
@@ -360,12 +377,20 @@ class Rogue(Character):
         """
         Reduces other character's hp by self's attack
         """
-        redaction = 1 - other.get_defence_modifier()
+        reduction = 1 - other.get_defence_modifier()
         if random.random() < self.get_crit_chance():
             PrintMessage('crit')
-            other.take_damage(self, self.get_attack() * 2 * redaction)
+            other.take_damage(self, self.get_attack() * 2 * reduction)
         else:
-            other.take_damage(self, self.get_attack() * redaction)
+            other.take_damage(self, self.get_attack() * reduction)
+
+    def add_item(self, item):
+        """
+        Adds an item to character inventory
+        """
+        super().add_item(item)
+        if item.get_type() == 'Weapon':
+            item.set_type('Knife')
 
     def print_stats(self):
         """
@@ -381,4 +406,20 @@ class Monster(Character):
         self._lvl_mult = lvl_mult / math.sqrt(lvl_mult)
         self._maxhp = self._hp = (random.randint(20, 40) * self._lvl_mult)
         self._mp = self._maxmp = (random.randint(1, 1) * self._lvl_mult)
-        self._attack = (random.randint(1, 20) * self._lvl_mult)
+        self._attack = (random.randint(1, 15) * self._lvl_mult)
+        self._trophy = None
+
+    def get_trophy(self):
+        return self._trophy
+
+class GreaterMonster(Monster):
+    def __init__(self, lvl_mult=1):
+        lvl_mult *= math.log10(lvl_mult)
+        super().__init__(lvl_mult)
+        self._trophy = RareItem(int(lvl_mult))
+        self.add_item(RareItem(int(lvl_mult)))
+        self.add_item(RareItem(int(lvl_mult)))
+        self.add_item(RareItem(int(lvl_mult)))
+        self._hp = self.get_maxhp()
+        self._mp = self.get_maxmp()
+
