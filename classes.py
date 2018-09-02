@@ -24,7 +24,6 @@ class Character:
         self._exp = self.default_exp
         self.recount_bonus()
 
-
     def get_class(self):
         """
         Returns character's class
@@ -42,18 +41,6 @@ class Character:
         Returns character's hp
         """
         return self._hp
-
-    # def get_hp_modifier(self):
-    #     """
-    #     Returns character's hp modifier
-    #     """
-    #     self._hp_modifier = 0
-    #     for i in range(0, len(self._inventory)):
-    #         slot = list(self._inventory)[i]
-    #         item = self._inventory[slot]
-    #         if item is not None:
-    #             self._hp_modifier += item.get_bonus_hp()
-    #     return self._hp_modifier
 
     def get_maxhp(self):
         """
@@ -76,18 +63,6 @@ class Character:
         """
         return self._mp
 
-    # def get_mp_modifier(self):
-    #     """
-    #     Returns character's hp modifier
-    #     """
-    #     self._mp_modifier = 0
-    #     for i in range(0, len(self._inventory)):
-    #         slot = list(self._inventory)[i]
-    #         item = self._inventory[slot]
-    #         if item is not None:
-    #             self._mp_modifier += item.get_bonus_mp()
-    #     return self._mp_modifier
-
     def get_maxmp(self):
         """
         Returns character's hp
@@ -105,18 +80,6 @@ class Character:
         Returns character's attack
         """
         return self._attack + self._attack_modifier
-
-    # def get_full_attack(self):
-    #     """
-    #     Returns character's full attack with modifiers
-    #     """
-    #     full_attack = self._attack
-    #     for i in range(0, len(self._inventory)):
-    #         slot = list(self._inventory)[i]
-    #         item = self._inventory[slot]
-    #         if item is not None:
-    #             full_attack += item.get_bonus_attack()
-    #     return full_attack
 
     def set_attack(self, attack):
         """
@@ -348,7 +311,7 @@ class Warrior(Character):
         """
         Returns character's defense bonus
         """
-        blood_defence_bonus = math.sqrt(self.get_maxhp() - self._hp) / 2
+        blood_defence_bonus = math.sqrt(self.get_maxhp() - self._hp) / 1.4
         return self._defense + self._defense_modifier + blood_defence_bonus
 
 
@@ -399,8 +362,8 @@ class Rogue(Character):
         """
         redaction = 1 - other.get_defence_modifier()
         if random.random() < self.get_crit_chance():
-            other.take_damage(self, self.get_attack() * 2 * redaction)
             PrintMessage('crit')
+            other.take_damage(self, self.get_attack() * 2 * redaction)
         else:
             other.take_damage(self, self.get_attack() * redaction)
 
@@ -413,25 +376,9 @@ class Rogue(Character):
 
 
 class Monster(Character):
-    # default_lvl_mult = 1
     def __init__(self, lvl_mult=1):
         super().__init__()
         self._lvl_mult = lvl_mult / math.sqrt(lvl_mult)
         self._maxhp = self._hp = (random.randint(20, 40) * self._lvl_mult)
         self._mp = self._maxmp = (random.randint(1, 1) * self._lvl_mult)
         self._attack = (random.randint(1, 20) * self._lvl_mult)
-
-
-# test = Mage()
-# print(test.get_hp())
-# print(test.get_maxhp())
-# test.add_item(CommonItem())
-# test.add_item(CommonItem())
-# test.add_item(CommonItem())
-# test.add_item(CommonItem())
-# test.print_inventory()
-# print(test.get_hp())
-# print(test.get_maxhp())
-# test.lvlup()
-# print(test.get_hp())
-# print(test.get_maxhp())
