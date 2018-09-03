@@ -34,6 +34,40 @@ class Game:
                 break
 
     @staticmethod
+    def item_drop(enemy):
+
+        if random.randint(1, 6) % 3 == 0:
+            item = 'Healing Potion'
+            print(f"You found a {item}!")
+            # PrintMessage('found_item_I', item)
+            item_healing = random.randint(10, 30)
+            PrintMessage('healed_CA', playerchar, item_healing)
+            playerchar.set_hp(round(playerchar.get_hp() + item_healing))
+        enemy_score = enemy.get_maxhp() + enemy.get_attack()
+
+        def rare_drop(chance):
+            if random.random() < chance:
+                return RareItem(playerchar.get_lvl())
+
+        def common_drop(chance):
+            if random.random() < chance:
+                return CommonItem(playerchar.get_lvl())
+
+        if enemy_score > 200:
+            playerchar.add_item(rare_drop(0.6))
+            playerchar.add_item(common_drop(0.2))
+
+        if enemy_score > 100:
+            playerchar.add_item(rare_drop(0.3))
+            playerchar.add_item(common_drop(0.6))
+
+        if enemy_score > 50:
+            playerchar.add_item(rare_drop(0.2))
+            playerchar.add_item(common_drop(0.3))
+        else:
+            playerchar.add_item(common_drop(0.3))
+
+    @staticmethod
     def battle_encounter(playerchar, enemy, first_attack=False):
         """
         Takes playerchar's and enemy's characters and battles them until one of them is dead
@@ -48,32 +82,7 @@ class Game:
             PrintMessage('dead')
             PrintMessage('end_game')
         else:
-            if random.randint(1, 6) % 3 == 0:
-                item = 'Healing Potion'
-                print(f"You found a {item}!")
-                # PrintMessage('found_item_I', item)
-                item_healing = random.randint(10, 30)
-                PrintMessage('healed_CA', playerchar, item_healing)
-                playerchar.set_hp(round(playerchar.get_hp() + item_healing))
-            if enemy.get_trophy() is not None:
-                PrintMessage('found_item_I', enemy.get_trophy())
-                enemy.get_trophy().print_stats()
-                if playerchar.get_inventory()[enemy.get_trophy().get_type()]:
-                    print("Your Item:")
-                    playerchar.get_inventory()[enemy.get_trophy().get_type()].print_stats()
-                print("Would you like to equip item? (Y/N)")
-                if input() == 'Y':
-                    playerchar.add_item(enemy.get_trophy())
-            if random.randint(1, 6) > 4:
-                item = CommonItem(playerchar.get_lvl())
-                PrintMessage('found_item_I', item)
-                item.print_stats()
-                if playerchar.get_inventory()[item.get_type()]:
-                    print("Your Item:")
-                    playerchar.get_inventory()[item.get_type()].print_stats()
-                print("Would you like to equip item? (Y/N)")
-                if input() == 'Y':
-                    playerchar.add_item(item)
+            Game.item_drop(enemy)
             playerchar.add_exp(enemy.get_maxhp())
             PrintMessage('stats')
             playerchar.print_stats()
@@ -117,8 +126,6 @@ class Game:
                     Game.battle_encounter(playerchar, enemy, False)
 
 
-# TODO enemies: Boss Enemy
-# TODO items: new random drop system
 # TODO mp -> mf for skills
 # TODO skills: Mage Fireball
 # TODO skills: Rogue Confusion

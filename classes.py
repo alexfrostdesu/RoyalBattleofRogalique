@@ -137,8 +137,18 @@ class Character:
         """
         Adds an item to character inventory
         """
-        self._inventory[item.get_type()] = item
-        self.recount_bonus()
+        if item is None:
+            pass
+        else:
+            PrintMessage('found_item_I', item)
+            item.print_stats()
+            if self.get_inventory()[item.get_type()]:
+                print(f"Comparing to your {item.get_type()}:")
+                self.get_inventory()[item.get_type()].compare_stats(item)
+            print("Would you like to equip item? (Y/N)")
+            if input() == 'Y':
+                self._inventory[item.get_type()] = item
+                self.recount_bonus()
 
     def get_inventory(self):
         """
@@ -276,8 +286,8 @@ class Mage(Character):
         Adds an item to character inventory
         """
         super().add_item(item)
-        if item.get_type() == 'Weapon':
-            item.set_type('Wand')
+        if self.get_inventory()['Weapon'] is not None:
+            self.get_inventory()['Weapon'].set_type('Wand')
 
     def take_damage(self, other, damage):
         """
@@ -328,9 +338,8 @@ class Warrior(Character):
         Adds an item to character inventory
         """
         super().add_item(item)
-        if item.get_type() == 'Weapon':
-            item.set_type('Sword')
-
+        if self.get_inventory()['Weapon'] is not None:
+            self.get_inventory()['Weapon'].set_type('Sword')
 
 class Rogue(Character):
     def __init__(self, crit_chance=0.2, evade_chance=0.2):
@@ -389,8 +398,8 @@ class Rogue(Character):
         Adds an item to character inventory
         """
         super().add_item(item)
-        if item.get_type() == 'Weapon':
-            item.set_type('Knife')
+        if self.get_inventory()['Weapon'] is not None:
+            self.get_inventory()['Weapon'].set_type('Knife')
 
     def print_stats(self):
         """
@@ -407,10 +416,13 @@ class Monster(Character):
         self._maxhp = self._hp = (random.randint(20, 40) * self._lvl_mult)
         self._mp = self._maxmp = (random.randint(1, 1) * self._lvl_mult)
         self._attack = (random.randint(1, 15) * self._lvl_mult)
-        self._trophy = None
 
-    def get_trophy(self):
-        return self._trophy
+    def add_item(self, item):
+        if item is None:
+            pass
+        else:
+            self._inventory[item.get_type()] = item
+
 
 class GreaterMonster(Monster):
     def __init__(self, lvl_mult=1):
@@ -423,3 +435,5 @@ class GreaterMonster(Monster):
         self._hp = self.get_maxhp()
         self._mp = self.get_maxmp()
 
+test = GreaterMonster(5)
+print(test.get_inventory())
