@@ -5,7 +5,6 @@ import random
 import time
 import os
 
-os.environ["TOKEN"] = '629923481:AAEZkNHau246xFlPYGIUTRlJn8XgSByzHnA' #### DELETE YHIS ####
 
 TOKEN = os.environ["TOKEN"]
 
