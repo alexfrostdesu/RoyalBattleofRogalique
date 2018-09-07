@@ -241,7 +241,7 @@ class Character:
         have_items = False
         for item in self.get_inventory():
             if self.get_inventory()[item] is not None:
-                itemlist += f"{item} | {self.get_inventory()[item].get_name()}\n"
+                itemlist += f"{item} | {self.get_inventory()[item].get_full_name()}\n"
                 have_items = True
         # while have_items:
         #     print("Show item stats? (N/Slot)")
@@ -279,9 +279,12 @@ class Mage(Character):
         """
         Adds an item to character inventory
         """
-        super().add_item(item)
-        if self.get_inventory()['Weapon'] is not None:
-            self.get_inventory()['Weapon'].set_type('Wand')
+        if item is None:
+            pass
+        else:
+            if item.get_type() == 'Weapon':
+                item.set_name('Wand')
+            super().add_item(item)
 
     def take_damage(self, other, damage):
         """
@@ -331,9 +334,12 @@ class Warrior(Character):
         """
         Adds an item to character inventory
         """
-        super().add_item(item)
-        if self.get_inventory()['Weapon'] is not None:
-            self.get_inventory()['Weapon'].set_type('Sword')
+        if item is None:
+            pass
+        else:
+            if item.get_type() == 'Weapon':
+                item.set_name('Sword')
+            super().add_item(item)
 
     def get_stats(self):
         """
@@ -397,9 +403,12 @@ class Rogue(Character):
         """
         Adds an item to character inventory
         """
-        super().add_item(item)
-        if self.get_inventory()['Weapon'] is not None:
-            self.get_inventory()['Weapon'].set_type('Knife')
+        if item is None:
+            pass
+        else:
+            if item.get_type() == 'Weapon':
+                item.set_name('Dagger')
+            super().add_item(item)
 
     def get_stats(self):
         """

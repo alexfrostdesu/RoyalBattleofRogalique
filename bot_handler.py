@@ -9,15 +9,19 @@ class BotHandler:
     def get_update_from(self):
         response = requests.get(self._url + "getUpdates", {'offset': self._offset, 'timeout': 100})
         update = response.json()['result']
-        if update:
+        if update != []:
             self._offset = update[-1].get('update_id') + 1
             return update
+        else:
+            self.get_update_from()
 
     def get_last_message(self):
         messages = self.get_update_from()
-        if messages:
+        if messages != []:
             last_message = messages[-1].get('message')
             return last_message
+        else:
+            self.get_last_message()
 
     def get_offset(self):
         return self._offset

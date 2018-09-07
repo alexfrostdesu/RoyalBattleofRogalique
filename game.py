@@ -5,6 +5,8 @@ import random
 import time
 import os
 
+os.environ["TOKEN"] = '629923481:AAEZkNHau246xFlPYGIUTRlJn8XgSByzHnA' #### DELETE YHIS ####
+
 TOKEN = os.environ["TOKEN"]
 
 class Game:
@@ -70,8 +72,9 @@ class Game:
 
                     if playerchar.get_inventory()[item.get_type()]:
                         playeritem = playerchar.get_inventory()[item.get_type()]
-                        dispatcher.send_message(f"Comparing to your {playeritem.get_name()}:\n" + item.get_compare_stats(playeritem),
-                                                session)
+                        dispatcher.send_message(
+                            f"Comparing to your {playeritem.get_full_name()}:\n" + item.get_compare_stats(playeritem),
+                            session)
 
                     dispatcher.send_message("Would you like to equip item? (Y/N)", session)
                     player_input = Message(dispatcher.get_last_message()).get_content()

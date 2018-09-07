@@ -3,7 +3,7 @@ class DialogMessage:
         if object.__class__.__name__ == 'Character' or object.__class__.__bases__[0].__name__ in ('Character', 'Monster'):
             self._character = object.get_class()
         elif object.__class__.__name__ == 'Item' or object.__class__.__bases__[0].__name__ == 'Item':
-            self._item = object.get_name()
+            self._item = object.get_full_name()
         if amount >= 0:
             self._amount = str(round(amount, 1))
         if target.__class__.__name__ == 'Character' or target.__class__.__bases__[0].__name__ in ('Character', 'Monster'):

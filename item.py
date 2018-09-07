@@ -1,8 +1,9 @@
 import random
 
 class Item:
-    def __init__(self, item_name, bonus_attack=0, bonus_hp=0, bonus_mp=0, bonus_defence=0):
-        self._name = item_name
+    def __init__(self, bonus_attack=0, bonus_hp=0, bonus_mp=0, bonus_defence=0):
+        self._name = self.get_type()
+        self._full_name = self.get_full_name()
         self._bonus_attack = bonus_attack
         self._bonus_hp = bonus_hp
         self._bonus_mp = bonus_mp
@@ -14,6 +15,12 @@ class Item:
         """
         return self._name
 
+    def get_full_name(self):
+        """
+        Returns item's name
+        """
+        return f"{self.get_rarity()} {self.get_name()} {self.get_affix()}"
+
     def set_name(self, name):
         """
         Takes new value for item's name and sets it
@@ -21,7 +28,22 @@ class Item:
         self._name = name
 
     def get_type(self):
+        """
+        Returns item's type
+        """
         return self._type
+
+    def get_rarity(self):
+        """
+        Returns item's type
+        """
+        return self._rarity
+
+    def get_affix(self):
+        """
+        Returns item's affix
+        """
+        return self._item_affix
 
     def set_type(self, new_type):
         """
@@ -78,14 +100,14 @@ class Item:
         self._bonus_defence = bonus_defence
 
     def print_stats(self):
-        print(self._name)
+        print(self.get_full_name())
         print(f"Bonus Damage: {self._bonus_attack}")
         print(f"Bonus HP: {self._bonus_hp}")
         print(f"Bonus MP: {self._bonus_mp}")
         print(f"Bonus Defence: {self._bonus_defence}")
 
     def get_stats(self):
-        stats = f"{self._name}\n" \
+        stats = f"{self.get_full_name()}\n" \
                 f"Bonus Damage: {self._bonus_attack}\n" \
                 f"Bonus HP: {self._bonus_hp}\n" \
                 f"Bonus MP: {self._bonus_mp}\n" \
@@ -93,7 +115,7 @@ class Item:
         return stats
 
     def get_compare_stats(self, other_item):
-        stats = f"{self._name}\n" \
+        stats = f"{self.get_full_name()}\n" \
                 f"Bonus Damage: {self._bonus_attack} ({self._bonus_attack - other_item.get_bonus_attack()})\n" \
                 f"Bonus HP: {self._bonus_hp} ({self._bonus_hp - other_item.get_bonus_hp()})\n" \
                 f"Bonus MP: {self._bonus_mp} ({self._bonus_mp - other_item.get_bonus_mp()})\n" \
@@ -111,10 +133,11 @@ class CommonItem(Item):
                      'Boots': (0, 10, 2, 2),
                      'Ring': (5, 20, 5, 0)
                            }
-        item_name = self._type = random.choice(list(self._item_dict))
-        item_stats = list([random.randint(0, i) for i in self._item_dict[item_name]])
-        item_name = "Common " + item_name
-        super().__init__(item_name, *item_stats)
+        self._type = random.choice(list(self._item_dict))
+        item_stats = list([random.randint(0, i) for i in self._item_dict[self._type]])
+        self._item_affix = ''
+        self._rarity = 'Common'
+        super().__init__(*item_stats)
 
 
 class RareItem(Item):
@@ -128,15 +151,16 @@ class RareItem(Item):
                            'Ring': (10, 30, 10, 0)
                            }
         self._affixlist = ['of Damage', 'of Vitality', 'of Magic', 'of Defence', 'of Random']
-        item_name = self._type = random.choice(list(self._item_dict))
-        item_affix = random.choice(self._affixlist)
-        item_stats = list([random.randint(0, i) for i in self._item_dict[item_name]])
-        if item_affix != 'of Random':
-            item_stats[self._affixlist.index(item_affix)] += player_lvl_bonus
+        self._type = random.choice(list(self._item_dict))
+        self._item_affix = random.choice(self._affixlist)
+        self._rarity = 'Rare'
+        item_stats = list([random.randint(0, i) for i in self._item_dict[self._type]])
+        if self._item_affix != 'of Random':
+            item_stats[self._affixlist.index(self._item_affix)] += player_lvl_bonus
         else:
             item_stats = (random.randint(0, 10), random.randint(0, 30), random.randint(0, 10), random.randint(0, 10))
-        item_name = f"Rare {self._type} {item_affix}"
-        super().__init__(item_name, *item_stats)
+        super().__init__(*item_stats)
+
 
 # item_dict = {'Armor': None,
 #              'Weapon': None,
