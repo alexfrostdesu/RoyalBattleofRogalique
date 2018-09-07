@@ -1,21 +1,29 @@
 from classes import *
-from events import PrintMessage
+from events import DialogMessage
+from bot_handler import BotHandler, Message
 import random
+import time
+import os
 
+TOKEN = os.environ["TOKEN"]
 
 class Game:
-
     @staticmethod
     def game_start():
         """
         Character selection string
         Returns playerchar
         """
-        PrintMessage('start_game')
         global playerchar
-        playerchar = eval("{}()".format(input()))
-        PrintMessage('stats')
-        playerchar.print_stats()
+        global session
+        player_input = Message(dispatcher.get_last_message())
+        playerchar = eval("{}()".format(player_input.get_content()))
+        session = player_input.get_chat_id()
+        player_stats = DialogMessage('stats').get_message() + "\n" \
+                       + playerchar.get_stats() + "\n" \
+                       + "======================================\n" \
+                       + playerchar.get_exp_lvl()
+        dispatcher.send_message(player_stats, session)
         Game.adventure(playerchar)
 
     @staticmethod
@@ -23,14 +31,17 @@ class Game:
         """
         Takes attacker's and defender's characters and battles them until one of them is dead
         """
+        battle_log = ""
         while attacker.is_alive() and defender.is_alive():
-            attacker.deal_damage(defender)
+            battle_log += attacker.attack(defender)
             if not defender.is_alive():
-                PrintMessage('won_C', attacker)
+                battle_log += DialogMessage('won_C', attacker).get_message()
+                dispatcher.send_message(battle_log, session)
                 break
-            defender.deal_damage(attacker)
+            battle_log += defender.attack(attacker)
             if not attacker.is_alive():
-                PrintMessage('won_C', defender)
+                battle_log += DialogMessage('won_C', defender).get_message()
+                dispatcher.send_message(battle_log, session)
                 break
 
     @staticmethod
@@ -38,11 +49,10 @@ class Game:
 
         if random.randint(1, 6) % 3 == 0:
             item = 'Healing Potion'
-            print(f"You found a {item}!")
-            # PrintMessage('found_item_I', item)
             item_healing = random.randint(10, 30)
-            PrintMessage('healed_CA', playerchar, item_healing)
+            dispatcher.send_message(f"You found a {item}!\n" + DialogMessage('healed_CA', playerchar, item_healing).get_message(), session)
             playerchar.set_hp(round(playerchar.get_hp() + item_healing))
+
         enemy_score = enemy.get_maxhp() + enemy.get_attack()
 
         def rare_drop(chance):
@@ -53,19 +63,35 @@ class Game:
             if random.random() < chance:
                 return CommonItem(playerchar.get_lvl())
 
+        def check_drop(item_list):
+            for item in item_droplist:
+                if item:
+                    dispatcher.send_message(DialogMessage('found_item_I', item).get_message() + "\n" + item.get_stats(), session)
+
+                    if playerchar.get_inventory()[item.get_type()]:
+                        playeritem = playerchar.get_inventory()[item.get_type()]
+                        dispatcher.send_message(f"Comparing to your {playeritem.get_name()}:\n" + item.get_compare_stats(playeritem),
+                                                session)
+
+                    dispatcher.send_message("Would you like to equip item? (Y/N)", session)
+                    player_input = Message(dispatcher.get_last_message()).get_content()
+                    if player_input == 'Y':
+                        playerchar.add_item(item)
+
         if enemy_score > 200:
-            playerchar.add_item(rare_drop(0.6))
-            playerchar.add_item(common_drop(0.2))
+            item_droplist = [rare_drop(0.6), common_drop(0.2)]
+            check_drop(item_droplist)
 
         if enemy_score > 100:
-            playerchar.add_item(rare_drop(0.3))
-            playerchar.add_item(common_drop(0.6))
+            item_droplist = [rare_drop(0.6), common_drop(0.2)]
+            check_drop(item_droplist)
 
         if enemy_score > 50:
-            playerchar.add_item(rare_drop(0.2))
-            playerchar.add_item(common_drop(0.3))
+            item_droplist = [rare_drop(0.2), common_drop(0.3)]
+            check_drop(item_droplist)
         else:
-            playerchar.add_item(common_drop(0.3))
+            item_droplist = [common_drop(0.3)]
+            check_drop(item_droplist)
 
     @staticmethod
     def battle_encounter(playerchar, enemy, first_attack=False):
@@ -79,14 +105,13 @@ class Game:
         else:
             Game.battle_until_death(enemy, playerchar)
         if not playerchar.is_alive():
-            PrintMessage('dead')
-            PrintMessage('end_game')
+            dispatcher.send_message(DialogMessage('dead').get_message(), session)
+            dispatcher.send_message(DialogMessage('end_game').get_message(), session)
         else:
             Game.item_drop(enemy)
-            playerchar.add_exp(enemy.get_maxhp())
-            PrintMessage('stats')
-            playerchar.print_stats()
-            playerchar.print_exp_lvl()
+            dispatcher.send_message(playerchar.add_exp(enemy.get_maxhp()), session)
+            player_stats = DialogMessage('stats').get_message() + "\n" + playerchar.get_stats() + "\n" + playerchar.get_exp_lvl()
+            dispatcher.send_message(player_stats, session)
 
     @staticmethod
     def adventure(playerchar):
@@ -95,14 +120,14 @@ class Game:
         Breaks on death or N input
         """
         while playerchar.is_alive():
-            PrintMessage('find_enemy')
-            player_input = input()
+            dispatcher.send_message(DialogMessage('find_enemy').get_message(), session)
+            player_input = Message(dispatcher.get_last_message()).get_content()
             if player_input == 'I':
-                playerchar.print_inventory()
+                dispatcher.send_message(playerchar.get_all_items(), session)
                 Game.adventure(playerchar)
                 break
             elif player_input == 'N':
-                PrintMessage('end_game')
+                dispatcher.send_message(DialogMessage('end_game').get_message(), session)
                 break
             else:
                 if random.random() < 0.6:
@@ -110,10 +135,12 @@ class Game:
                         enemy = GreaterMonster(playerchar.get_lvl())
                     else:
                         enemy = Monster(playerchar.get_lvl())
-                    PrintMessage('see_enemy_C', enemy)
-                    enemy.print_stats()
-                    PrintMessage('attack_enemy')
-                    if input() == 'Y':
+                    enemy_prompt = DialogMessage('see_enemy_C', enemy).get_message() + "\n" \
+                                   + enemy.get_stats() + "\n"
+                    dispatcher.send_message(enemy_prompt, session)
+                    dispatcher.send_message(DialogMessage('attack_enemy').get_message(), session)
+                    player_input = Message(dispatcher.get_last_message()).get_content()
+                    if player_input == 'Y':
                         Game.battle_encounter(playerchar, enemy, True)
                     else:
                         Game.adventure(playerchar)
@@ -121,8 +148,9 @@ class Game:
 
                 else:
                     enemy = Monster(playerchar.get_lvl())
-                    PrintMessage('enemy_attack_C', enemy)
-                    enemy.print_stats()
+                    enemy_prompt = DialogMessage('enemy_attack_C', enemy).get_message() + "\n" \
+                                   + enemy.get_stats() + "\n"
+                    dispatcher.send_message(enemy_prompt, session)
                     Game.battle_encounter(playerchar, enemy, False)
 
 
@@ -133,8 +161,23 @@ class Game:
 # TODO game: save state
 # TODO game: console choice?
 
+def main():
+    global dispatcher
+    dispatcher = BotHandler(TOKEN)
+    while True:
+        msg = Message(dispatcher.get_last_message())
+        if msg.get_type() != 'text':
+            time.sleep(0.5)
+            pass
+        else:
+            if msg.get_content() == '/start':
+                dispatcher.send_message('Ready Player One', msg.get_chat_id())
+                time.sleep(1)
+                dispatcher.send_message(DialogMessage('start_game').get_message(), msg.get_chat_id())
+                Game.game_start()
+            else:
+                time.sleep(0.5)
+                pass
 
 if __name__ == '__main__':
-    Game.game_start()
-    global playerchar
-
+    main()
