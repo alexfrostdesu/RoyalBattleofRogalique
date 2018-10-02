@@ -22,7 +22,6 @@ class Character:
         self._skills = []
         self._attack = self.default_attack
         self._lvl = self.default_lvl
-        # self._exp_to_next_lvl = self.default_exp_to_next_lvl
         self._exp = self.default_exp
         self.recount_item_bonus()
 
@@ -187,7 +186,7 @@ class Character:
         self._mp = self.get_maxmp()
         self._attack += 1
         self._exp = 0
-        # return DialogMessage('lvlup_C', self).get_message()
+        return DialogMessage('lvlup_C', self).get_message()
 
 #   Items and inventory #
 
@@ -232,14 +231,13 @@ class Character:
         """
         return self._skills
 
-
     def add_skill(self, skill):
         """
         Adds skill to character
         """
         self._skills += skill
 
-        # skill = {'TYPE': True (Attack) or False (Defence), 'NAME' = 'SkillName', 'POWER' = amount, 'CD' = amount, 'CD_MAX' = amount}
+# skill = {'TYPE': True (Attack) or False (Defence), 'NAME' = 'SkillName', 'POWER' = amount, 'CD' = amount, 'CD_MAX' = amount}
 
 #   is_alive check #
 
@@ -257,7 +255,7 @@ class Character:
         Prints message about that attack
         """
         self._hp -= damage * self.get_defence_modifier()
-        # return DialogMessage('attack_CAT', other, damage, self).get_message()  + "\n"
+        return DialogMessage('attack_CAT', other, damage * self.get_defence_modifier(), self).get_message()  + "\n"
 
     def take_damage_pure(self, damage):
         """
@@ -270,7 +268,7 @@ class Character:
         Reduces other character's hp by self's attack
         """
         attack = self.get_attack() * self.get_attack_modifier()
-        return other.take_damage_from(self, attack)
+        return other.take_damage_from(attack, self)
 
 #   Getting character's stats #
 
@@ -284,7 +282,7 @@ class Character:
                      MP=int(self.get_current_mp()),
                      MAX_MP=int(self.get_maxmp()),
                      ATT=int(self.get_attack()),
-                     DEF=round(self.get_defence_modifier(), 2),
+                     DEF=round(1 - self.get_defence_modifier(), 2),
                      EXP=int(self.get_exp()),
                      EXPLVL=int(self.get_exp_to_next_lvl()))
         # stats_msg = f"Class: {self._cls}\n" \
@@ -338,6 +336,7 @@ class Mage(Character):
 
     def __init__(self):
         super().__init__()
+        self._cls = 'Mage'
         self.add_skill({'TYPE': True, 'NAME': 'Fireball', 'POWER': self.get_current_mp() * 3, 'CD': 3, 'CD_MAX': 3})
         self._es = self.get_es()
 
@@ -372,18 +371,16 @@ class Mage(Character):
         """
         if self._es > 0 and damage < self._es:
             self._es -= damage
-            # return DialogMessage('attack_es_CAT', other, damage, self).get_message() + "\n"
+            return DialogMessage('attack_es_CAT', other, damage, self).get_message() + "\n"
         elif 0 < self._es <= damage:
             if self._es == damage:
-                broke_es = True
                 self._es = 0
-                # return DialogMessage('broke_es_C', self).get_message() + "\n"
+                return DialogMessage('broke_es_C', self).get_message() + "\n"
             else:
                 leftoverdmg = damage - self._es
-                broke_es = True
                 self._hp -= leftoverdmg * self.get_attack_modifier()
                 self._es = 0
-                # return DialogMessage('broke_es_dmg_hp_CAT', other, damage, self).get_message() + "\n"
+                return DialogMessage('broke_es_dmg_hp_CAT', other, leftoverdmg * self.get_attack_modifier(), self).get_message() + "\n"
         else:
             return super().take_damage_from(damage, other)
 
@@ -419,7 +416,7 @@ class Warrior(Character):
         """
         Returns warrior's passive defence bonus
         """
-        return 1 - (math.log10(self.get_maxhp() - self.get_current_hp() + 1) / 10)
+        return math.log10(self.get_maxhp() - self.get_current_hp() + 1) / 10
 
 #   Class specific methods modifications #
 
@@ -434,7 +431,7 @@ class Warrior(Character):
         Returns character's stats in a dictionary
         """
         stats = super().get_stats()
-        stats['DEF_BONUS'] = self.get_passive_defence_bonus()
+        stats['DEF_BONUS'] = round(self.get_passive_defence_bonus(), 2)
         stats['HP_BONUS'] = self.hp_mult
         return stats
 
@@ -446,6 +443,7 @@ class Rogue(Character):
 
     def __init__(self):
         super().__init__()
+        self._cls = 'Rogue'
 
 #   Evasion getters and setters #
 
@@ -497,8 +495,7 @@ class Rogue(Character):
         if not self.get_dodge():
             return super().take_damage_from(damage, other)
         else:
-            pass
-            # DialogMessage('evaded_CA', self, damage).get_message()  + "\n"
+            DialogMessage('evaded_CA', self, damage).get_message()  + "\n"
 
     def attack(self, other):
         """
@@ -506,7 +503,7 @@ class Rogue(Character):
         """
         if self.get_crit():
             attack = self.get_attack() * self.get_attack_modifier() * 2
-            # DialogMessage('crit', self, damage).get_message()  + "\n"
+            DialogMessage('crit', self, attack).get_message()  + "\n"
         else:
             attack = self.get_attack() * self.get_attack_modifier()
         return other.take_damage_from(attack, self)
@@ -535,6 +532,7 @@ class Rogue(Character):
 class Monster(Character):
     def __init__(self, lvl_mult=1):
         super().__init__()
+        self._cls = 'Monster'
         self._lvl_mult = lvl_mult / math.sqrt(lvl_mult)
         self._maxhp = self._hp = (random.randint(20, 40) * self._lvl_mult)
         self._mp = self._maxmp = (random.randint(1, 1) * self._lvl_mult)
@@ -552,6 +550,7 @@ class GreaterMonster(Monster):
     def __init__(self, lvl_mult=1):
         lvl_mult *= 2 * math.log10(lvl_mult)
         super().__init__(lvl_mult)
+        self._cls = 'Greater Monster'
         self.add_item(RareItem(int(lvl_mult)))
         self.add_item(RareItem(int(lvl_mult)))
         self.add_item(RareItem(int(lvl_mult)))
@@ -561,21 +560,23 @@ class GreaterMonster(Monster):
 
 # TESTING #
 
-testwar = Monster()
-testwar.print_stats()
-testwar.add_exp(100)
-testwar.print_stats()
-testwar.add_exp(100)
-testwar.print_stats()
-testwar.add_exp(100)
-testwar.print_stats()
-testwar.take_damage_from(20, None)
-testwar.print_stats()
-testwar.take_damage_from(20, None)
-testwar.print_stats()
-testwar.take_damage_from(20, None)
-testwar.print_stats()
-testwar.take_damage_from(20, None)
-testwar.add_exp(100)
-testwar.add_exp(100)
-testwar.print_stats()
+log = ''
+test = Warrior()
+testwar = Character()
+test.add_exp(100)
+test.add_exp(100)
+test.add_exp(100)
+test.print_stats()
+print(test.get_passive_defence_bonus())
+print(test.get_defence_modifier())
+log += testwar.attack(test)
+test.print_stats()
+log += testwar.attack(test)
+test.print_stats()
+log += testwar.attack(test)
+test.print_stats()
+log += testwar.attack(test)
+test.add_exp(100)
+test.add_exp(100)
+test.print_stats()
+print(log)
