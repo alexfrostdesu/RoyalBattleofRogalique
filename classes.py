@@ -4,31 +4,28 @@ import random
 import math
 
 
-
-
-
-
-
 class Character:
     default_hp = 100
     default_mp = 10
     default_attack = 10
     default_exp = 0
     default_lvl = 1
-    default_exp_to_next_lvl = 100 + default_lvl * 10
+    _character = True
 
     def __init__(self):
-        self._cls = self.__class__.__name__
-        self._defense = 1
+        self._cls = 'Character'
+        self._armour = 0
         self._stash = []
         self._inventory = {'Armor': None, 'Weapon': None, 'Helm': None, 'Boots': None, 'Ring': None}
         self._maxhp = self._hp = self.default_hp
         self._maxmp = self._mp = self.default_mp
         self._attack = self.default_attack
         self._lvl = self.default_lvl
-        self._exp_to_next_lvl = self.default_exp_to_next_lvl
+        # self._exp_to_next_lvl = self.default_exp_to_next_lvl
         self._exp = self.default_exp
         self.recount_bonus()
+
+# Class getters and setters #
 
     def get_class(self):
         """
@@ -42,7 +39,9 @@ class Character:
         """
         self._cls = cls
 
-    def get_hp(self):
+# HP getters and setters #
+
+    def get_current_hp(self):
         """
         Returns character's hp
         """
@@ -63,7 +62,9 @@ class Character:
         else:
             self._hp = self.get_maxhp()
 
-    def get_mp(self):
+# MP getters and setters #
+
+    def get_current_mp(self):
         """
         Returns character's mp
         """
@@ -81,6 +82,8 @@ class Character:
         """
         self._mp = mp
 
+# Attack getters and setters #
+
     def get_attack(self):
         """
         Returns character's attack
@@ -93,17 +96,34 @@ class Character:
         """
         self._attack = attack
 
-    def get_defense(self):
+    def get_attack_modifier(self):
         """
-        Returns character's defense bonus
+        Returns character's attack modifier
+        Default modifier is 1 and used for player classes
         """
-        return self._defense + self._defense_modifier
+        return 1
 
-    def set_defence(self, defense):
+# Defence getters and setters #
+
+    def get_armour(self):
         """
-        Takes new value for character's attack and sets it
+        Returns character's armour
         """
-        self._defense = defense
+        return self._armour + self._armour_modifier
+
+    def set_armour(self, armour):
+        """
+        Takes new value for character's armour and sets it
+        """
+        self._armour = armour
+
+    def get_defence_modifier(self):
+        """
+        Returns character's defence modifier
+        """
+        return 1 - (math.log10(self.get_armour() + 1) / 3)
+
+# EXP getters and setters #
 
     def get_exp(self):
         """
@@ -111,33 +131,58 @@ class Character:
         """
         return self._exp
 
+    def _set_exp(self, exp):
+        """
+        Takes new value for character's exp and sets it
+        Not really intended to use
+        Not until I fix problems with lvlup
+        """
+        self._exp = exp
+
     def get_exp_to_next_lvl(self):
         """
         Returns character's exp to the next lvl
         """
-        return self._exp_to_next_lvl
+        return 100 * math.sqrt(self._lvl)
 
-    def _set_exp(self, exp):
-        """
-        Takes new value for character's exp and sets it
-        """
-        self._exp = exp
+# LVL getters and setters #
 
-    def get_exp_lvl(self):
+    def get_lvl(self):
         """
-        Prints character's current level, exp and exp needed for next level
+        Returns character's lvl
         """
-        return f"Current Level: {self._lvl:1.0f}, Current Experience: {self._exp:1.0f}, Next Level: {self._exp_to_next_lvl:1.0f}"
+        return self._lvl
+
+    def set_lvl(self, lvl):
+        """
+        Sets character's lvl
+        """
+        self._lvl = lvl
+
+# Adding EXP and lvlup #
 
     def add_exp(self, exp):
         """
-        Adds a amount of exp to character
+        Adds an amount of exp to character
         """
         self._exp += exp
-        if self._exp > self._exp_to_next_lvl:
+        if self._exp >= self.get_exp_to_next_lvl():
             self._lvl += 1
-            self._exp_to_next_lvl = 100 * math.sqrt(self._lvl)
             return self.lvlup()
+
+    def lvlup(self):
+        """
+        Gives character a lvlup bonus
+        """
+        self._maxhp += 10
+        self._hp = self.get_maxhp()
+        self._maxmp += 10
+        self._mp = self.get_maxmp()
+        self._attack += 1
+        self._exp = 0
+        # return DialogMessage('lvlup_C', self).get_message()
+
+# Items and inventory #
 
     def add_item(self, item):
         """
@@ -162,7 +207,7 @@ class Character:
         self._hp_modifier = 0
         self._mp_modifier = 0
         self._attack_modifier = 0
-        self._defense_modifier = 0
+        self._armour_modifier = 0
         for i in range(0, len(self._inventory)):
             slot = list(self._inventory)[i]
             item = self._inventory[slot]
@@ -170,13 +215,9 @@ class Character:
                 self._hp_modifier += item.get_bonus_hp()
                 self._mp_modifier += item.get_bonus_mp()
                 self._attack_modifier += item.get_bonus_attack()
-                self._defense_modifier += item.get_bonus_defence()
+                self._armour_modifier += item.get_bonus_defence()
 
-    def get_lvl(self):
-        """
-        Returns character's exp
-        """
-        return self._lvl
+# is_alive check #
 
     def is_alive(self):
         """
@@ -184,50 +225,49 @@ class Character:
         """
         return self._hp > 0
 
-    def lvlup(self):
-        """
-        Gives character a lvlup bonus
-        """
-        self._maxhp += 10
-        self._hp = self.get_maxhp()
-        self._maxmp += 10
-        self._mp = self.get_maxmp()
-        self._attack += 1
-        self._exp = 0
-        return DialogMessage('lvlup_C', self).get_message()
+# Attacking and taking damage #
 
-    def get_defence_modifier(self):
+    def take_damage_from(self, other, damage):
         """
-        Returns character's defence modifier
-        """
-        if self.get_defense() > 2:
-            return math.log10(math.sqrt(self.get_defense() / 2))
-        else:
-            return self.get_defense() / 20
-
-    def take_damage(self, other, damage):
-        """
-        Takes other character's attack and reduces self hp by it
+        Takes damage from other character
         Prints message about that attack
         """
+        self._hp -= damage * self.get_defence_modifier()
+        # return DialogMessage('attack_CAT', other, damage, self).get_message()  + "\n"
+
+    def take_damage_pure(self, damage):
+        """
+        Takes pure damage
+        """
         self._hp -= damage
-        return DialogMessage('attack_CAT', other, damage, self).get_message()  + "\n"
 
     def attack(self, other):
         """
         Reduces other character's hp by self's attack
         """
-        reduction = 1 - other.get_defence_modifier()
-        return other.take_damage(self, self.get_attack() * reduction)
+        attack = self.get_attack() * self.get_attack_modifier()
+        return other.take_damage_from(self, attack)
+
+# Getting character's stats #
 
     def get_stats(self):
         """
         Returns character's stats
         """
-        stats_msg = f"Class: {self._cls}\n" \
-                    f"HP: {self._hp:1.0f}/{self.get_maxhp():1.0f} || MP: {self._mp:1.0f}/{self.get_maxmp():1.0f}\n" \
-                    f"Attack: {self._attack:1.0f}+{self._attack_modifier} || Defense Bonus: {(self.get_defence_modifier()) * 100:1.0f}%\n"
-        return stats_msg
+        cls = self.get_class()
+        hp = self.get_current_hp()
+        max_hp = self.get_maxhp()
+        mp = self.get_current_mp()
+        max_mp = self.get_maxmp()
+        attack = self.get_attack()
+        defence = self.get_defence_modifier()
+        stats = {'CLASS': cls, 'HP': hp, 'MAX_HP': max_hp, 'MP': mp, 'MAX_MP': max_mp, 'ATTACK': attack, 'DEFENCE': defence}
+        # stats_msg = f"Class: {self._cls}\n" \
+        #             f"HP: {self._hp:1.0f}/{self.get_maxhp():1.0f} || MP: {self._mp:1.0f}/{self.get_maxmp():1.0f}\n" \
+        #             f"Attack: {self._attack:1.0f}+{self._attack_modifier} || Defense Bonus: {(self.get_defence_modifier()) * 100:1.0f}%\n"
+        return stats
+
+# legacy used stuff #
 
     def print_stats(self):
         """
@@ -259,6 +299,12 @@ class Character:
         if not have_items:
             itemlist += "Your inventory is empty."
         return itemlist
+
+    # def get_exp_lvl(self):
+    #     """
+    #     Prints character's current level, exp and exp needed for next level
+    #     """
+    #     return f"Current Level: {self._lvl:1.0f}, Current Experience: {self._exp:1.0f}, Next Level: {self._exp_to_next_lvl:1.0f}"
 
 
 class Mage(Character):
@@ -333,7 +379,7 @@ class Warrior(Character):
         Returns character's defense bonus
         """
         blood_defense_bonus = math.sqrt(self.get_maxhp() - self._hp) / 1.4
-        return self._defense + self._defense_modifier + blood_defense_bonus
+        return self._armour + self._defense_modifier + blood_defense_bonus
 
     def add_item(self, item):
         """
@@ -352,6 +398,7 @@ class Warrior(Character):
         """
         stats_msg = super().get_stats() + "Special: Blood Defense"
         return stats_msg
+
 
 class Rogue(Character):
     def __init__(self, crit_chance=0.2, evade_chance=0.2):
@@ -423,7 +470,6 @@ class Rogue(Character):
         return stats_msg
 
 
-
 class Monster(Character):
     def __init__(self, lvl_mult=1):
         super().__init__()
@@ -449,3 +495,17 @@ class GreaterMonster(Monster):
         self.add_item(RareItem(int(lvl_mult)))
         self._hp = self.get_maxhp()
         self._mp = self.get_maxmp()
+
+
+# TESTING #
+
+testchar1 = Character()
+testchar2 = Character()
+testchar1.attack(testchar2)
+print(testchar2.get_stats())
+testchar1.add_item(CommonItem(1))
+print(testchar1.get_inventory())
+print(testchar1.get_stats())
+testchar2.attack(testchar1)
+print(testchar1.get_stats())
+
