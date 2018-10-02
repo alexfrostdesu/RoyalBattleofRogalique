@@ -4,6 +4,11 @@ import random
 import math
 
 
+
+
+
+
+
 class Character:
     default_hp = 100
     default_mp = 10
