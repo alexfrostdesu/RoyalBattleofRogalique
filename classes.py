@@ -180,7 +180,8 @@ class Character:
         self._exp += exp
         if self._exp >= self.get_exp_to_next_lvl():
             self._lvl += 1
-            return self.lvlup()
+            self.lvlup()
+            return DialogMessage('lvlup_CA', self, self.get_lvl()).get_message()
 
     def lvlup(self):
         """
@@ -192,7 +193,6 @@ class Character:
         self._mp = self.get_maxmp()
         self._attack += 1
         self._exp = 0
-        return DialogMessage('lvlup_CA', self, self.get_lvl()).get_message()
 
 #   Items and inventory #
 
@@ -496,7 +496,7 @@ class Rogue(Character):
         if not self.get_dodge():
             return super().take_damage_from(damage, other)
         else:
-            DialogMessage('evaded_CA', self, damage).get_message()  + "\n"
+            return DialogMessage('evaded_CA', self, damage).get_message() + "\n"
 
     def attack(self, other):
         """
@@ -504,7 +504,7 @@ class Rogue(Character):
         """
         if self.get_crit():
             attack = self.get_attack() * self.get_attack_modifier() * 2
-            DialogMessage('crit', self, attack).get_message()  + "\n"
+            # DialogMessage('crit', self, attack).get_message()  + "\n"
         else:
             attack = self.get_attack() * self.get_attack_modifier()
         return other.take_damage_from(attack, self)

@@ -115,19 +115,19 @@ class Item:
         print(f"Bonus Defence: {self._bonus_defence}")
 
     def get_stats(self):
-        stats = f"*{self.get_full_name()}*" \
-                f"```\nBonus Damage: ".ljust(20) + f"| {self._bonus_attack}" \
-                f"\nBonus HP:".ljust(20) + f"| {self._bonus_hp}" \
-                f"\nBonus MP:".ljust(20) + f"| {self._bonus_mp}" \
-                f"\nBonus Defence:".ljust(20) + f"| {self._bonus_defence}```"
+        stats = f"*{self.get_full_name()}*" + \
+                f"```\nBonus Damage: ".ljust(15) + f"| {self._bonus_attack}" + \
+                f"\nBonus HP:".ljust(15) + f"| {self._bonus_hp}" + \
+                f"\nBonus MP:".ljust(15) + f"| {self._bonus_mp}" + \
+                f"\nBonus Defence:".ljust(15) + f"| {self._bonus_defence}```"
         return stats
 
     def get_compare_stats(self, other_item):
-        stats = f"{self.get_full_name()}\n" \
-                f"Bonus Damage: {self._bonus_attack} ({self._bonus_attack - other_item.get_bonus_attack()})\n" \
-                f"Bonus HP: {self._bonus_hp} ({self._bonus_hp - other_item.get_bonus_hp()})\n" \
-                f"Bonus MP: {self._bonus_mp} ({self._bonus_mp - other_item.get_bonus_mp()})\n" \
-                f"Bonus Defence: {self._bonus_defence} ({self._bonus_defence - other_item.get_bonus_defence()})\n"
+        stats = f"{self.get_full_name()}\n" + \
+                f"```\nBonus Damage: ".ljust(15) + f"| {self._bonus_attack}".ljust(5) + f"({self._bonus_attack - other_item.get_bonus_attack()})" + \
+                f"\nBonus HP:".ljust(15) + f"| {self._bonus_hp}".ljust(5) + f"({self._bonus_hp - other_item.get_bonus_hp()})" + \
+                f"\nBonus MP:".ljust(15) + f"| {self._bonus_mp}".ljust(5) + f"({self._bonus_mp - other_item.get_bonus_mp()})" + \
+                f"\nBonus Defence:".ljust(15) + f"| {self._bonus_defence}".ljust(5) + f"({self._bonus_defence - other_item.get_bonus_defence()})```"
         return stats
 
 
