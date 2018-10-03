@@ -1,4 +1,6 @@
 import requests
+import time
+
 
 class BotHandler:
     def __init__(self, token):
@@ -6,22 +8,7 @@ class BotHandler:
         self._url = "https://api.telegram.org/bot{}/".format(self._token)
         self._offset = None
 
-    def get_update_from(self):
-        response = requests.get(self._url + "getUpdates", {'offset': self._offset, 'timeout': 100})
-        update = response.json()['result']
-        if update != []:
-            self._offset = update[-1].get('update_id') + 1
-            return update
-        else:
-            self.get_update_from()
-
-    def get_last_message(self):
-        messages = self.get_update_from()
-        if messages != []:
-            last_message = messages[-1].get('message')
-            return last_message
-        else:
-            self.get_last_message()
+#   Offset getter and setter #
 
     def get_offset(self):
         return self._offset
@@ -29,15 +16,28 @@ class BotHandler:
     def set_offset(self, offset):
         self._offset = offset
 
-    def send_message(self, text, chat_id):
-        response = requests.post(self._url + "sendMessage", {'text': text, 'chat_id': chat_id})
+#   Important part #
+
+    def get_update(self):
+        while True:
+            response = requests.get(self._url + "getUpdates", {'offset': self._offset, 'timeout': 20})
+            print('Updating')  # testing reasons
+            update = response.json()['result']
+            if update == []:
+                pass
+            else:
+                self._offset = update[-1]['update_id'] + 1
+                return update
+
+    def send_message(self, text, chat_id, user_id):
+        response = requests.post(self._url + "sendMessage", {'text': text, 'chat_id': chat_id, 'from': user_id, 'parse_mode': 'Markdown'})
         return response
 
 
 class Message:
     def __init__(self, message):
         self._message = message
-        self._message_types = ['text', 'sticker', 'photo', 'document','video', 'audio', 'voice',
+        self._message_types = ['text', 'sticker', 'photo', 'document', 'video', 'audio', 'voice',
                                'video_note', 'contact', 'location', 'venue', 'game', 'invoice']
 
     def get_message_body(self):
@@ -57,5 +57,8 @@ class Message:
 
     def get_chat_id(self):
         return self._message['chat']['id']
+
+    def get_user_id(self):
+        return self._message['from']
 
 

@@ -16,7 +16,7 @@ class Character:
         self._cls = 'Character'
         self._armour = 0
         self._stash = []
-        self._inventory = {'Armor': None, 'Weapon': None, 'Helm': None, 'Boots': None, 'Ring': None}
+        self._inventory = {'Armour': None, 'Weapon': None, 'Helm': None, 'Boots': None, 'Ring': None}
         self._maxhp = self._hp = self.default_hp
         self._maxmp = self._mp = self.default_mp
         self._skills = []
@@ -38,6 +38,12 @@ class Character:
         Takes new value for character's class and sets it
         """
         self._cls = cls
+
+    def get_character(self):
+        """
+        Check if it is a character
+        """
+        return self._character
 
 #   HP getters and setters #
 
@@ -186,7 +192,7 @@ class Character:
         self._mp = self.get_maxmp()
         self._attack += 1
         self._exp = 0
-        return DialogMessage('lvlup_C', self).get_message()
+        return DialogMessage('lvlup_CA', self, self.get_lvl()).get_message()
 
 #   Items and inventory #
 
@@ -237,7 +243,7 @@ class Character:
         """
         self._skills += skill
 
-# skill = {'TYPE': True (Attack) or False (Defence), 'NAME' = 'SkillName', 'POWER' = amount, 'CD' = amount, 'CD_MAX' = amount}
+    # skill = {'TYPE': True (Attack) or False (Defence), 'NAME' = 'SkillName', 'POWER' = amount, 'CD' = amount, 'CD_MAX' = amount}
 
 #   is_alive check #
 
@@ -277,28 +283,29 @@ class Character:
         Returns character's stats in a dictionary
         """
         stats = dict(CLS=self.get_class(),
-                     HP=int(self.get_current_hp()),
-                     MAX_HP=int(self.get_maxhp()),
-                     MP=int(self.get_current_mp()),
-                     MAX_MP=int(self.get_maxmp()),
-                     ATT=int(self.get_attack()),
+                     HP=round(self.get_current_hp(), 2),
+                     MAX_HP=round(self.get_maxhp(), 2),
+                     MP=round(self.get_current_mp(), 2),
+                     MAX_MP=round(self.get_maxmp(), 2),
+                     ATT=round(self.get_attack(), 2),
+                     ATT_BONUS=round(self._attack_item_bonus, 2),
                      DEF=round(1 - self.get_defence_modifier(), 2),
-                     EXP=int(self.get_exp()),
-                     EXPLVL=int(self.get_exp_to_next_lvl()))
-        # stats_msg = f"Class: {self._cls}\n" \
-        #             f"HP: {self._hp:1.0f}/{self.get_maxhp():1.0f} || MP: {self._mp:1.0f}/{self.get_maxmp():1.0f}\n" \
-        #             f"Attack: {self._attack:1.0f}+{self._attack_modifier} || Defense Bonus: {(self.get_defence_modifier()) * 100:1.0f}%\n"
+                     LVL=self.get_lvl(),
+                     EXP=round(self.get_exp(), 2),
+                     EXPLVL=round(self.get_exp_to_next_lvl(), 2),
+                     INV=self.get_inventory(),
+                     SKILLS=self.get_skills())
         return stats
 
-#   legacy used stuff #
+#   testing used stuff #
 
-    def print_stats(self):
+    def _print_stats(self):
         """
         Prints character's stats
         """
         print(self.get_stats())
 
-    def get_all_items(self):
+    def _get_all_items(self):
         """
         Prints character's inventory
         """
@@ -315,18 +322,12 @@ class Character:
         #     slot = input()
         #     if slot in list(self._inventory):
         #         item = self._inventory[slot]
-        #         item.print_stats()
+        #         item._print_stats()
         #     else:
         #         break
         if not have_items:
             itemlist += "Your inventory is empty."
         return itemlist
-
-    # def get_exp_lvl(self):
-    #     """
-    #     Prints character's current level, exp and exp needed for next level
-    #     """
-    #     return f"Current Level: {self._lvl:1.0f}, Current Experience: {self._exp:1.0f}, Next Level: {self._exp_to_next_lvl:1.0f}"
 
 
 class Mage(Character):
@@ -560,23 +561,25 @@ class GreaterMonster(Monster):
 
 # TESTING #
 
-log = ''
-test = Warrior()
-testwar = Character()
-test.add_exp(100)
-test.add_exp(100)
-test.add_exp(100)
-test.print_stats()
-print(test.get_passive_defence_bonus())
-print(test.get_defence_modifier())
-log += testwar.attack(test)
-test.print_stats()
-log += testwar.attack(test)
-test.print_stats()
-log += testwar.attack(test)
-test.print_stats()
-log += testwar.attack(test)
-test.add_exp(100)
-test.add_exp(100)
-test.print_stats()
-print(log)
+# log = ''
+# test = Warrior()
+# testwar = Monster()
+# test.add_exp(100)
+# test.add_exp(100)
+# test.add_exp(100)
+# test._print_stats()
+# log += testwar.attack(test)
+# test._print_stats()
+# log += testwar.attack(test)
+# test._print_stats()
+# log += testwar.attack(test)
+# test._print_stats()
+# log += testwar.attack(test)
+# test.add_exp(100)
+# test.add_exp(100)
+# test.add_item(CommonItem(1))
+# test._print_stats()
+# print(log)
+
+# TODO: initiative
+# TODO: skills as classes

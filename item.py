@@ -1,6 +1,8 @@
 import random
 
 class Item:
+    _character = False
+
     def __init__(self, bonus_attack=0, bonus_hp=0, bonus_mp=0, bonus_defence=0):
         self._name = self.get_type()
         self._full_name = self.get_full_name()
@@ -32,6 +34,12 @@ class Item:
         Returns item's type
         """
         return self._type
+
+    def get_character(self):
+        """
+        Check if it is a character
+        """
+        return self._character
 
     def get_rarity(self):
         """
@@ -107,11 +115,11 @@ class Item:
         print(f"Bonus Defence: {self._bonus_defence}")
 
     def get_stats(self):
-        stats = f"{self.get_full_name()}\n" \
-                f"Bonus Damage: {self._bonus_attack}\n" \
-                f"Bonus HP: {self._bonus_hp}\n" \
-                f"Bonus MP: {self._bonus_mp}\n" \
-                f"Bonus Defence: {self._bonus_defence}\n"
+        stats = f"*{self.get_full_name()}*" \
+                f"```\nBonus Damage: ".ljust(20) + f"| {self._bonus_attack}" \
+                f"\nBonus HP:".ljust(20) + f"| {self._bonus_hp}" \
+                f"\nBonus MP:".ljust(20) + f"| {self._bonus_mp}" \
+                f"\nBonus Defence:".ljust(20) + f"| {self._bonus_defence}```"
         return stats
 
     def get_compare_stats(self, other_item):
@@ -127,7 +135,7 @@ class CommonItem(Item):
     def __init__(self, lvl):
         player_lvl_bonus = random.randint(1, lvl)
         #                     ATTACK || HP || MP || DEFENSE
-        self._item_dict = {'Armor': (0, 10, 2, 5 + player_lvl_bonus),
+        self._item_dict = {'Armour': (0, 10, 2, 5 + player_lvl_bonus),
                      'Weapon': (5 + player_lvl_bonus, 0, 2, 0),
                      'Helm': (0, 5, 2, 5),
                      'Boots': (0, 10, 2, 2),
@@ -144,7 +152,7 @@ class RareItem(Item):
     def __init__(self, lvl):
         player_lvl_bonus = random.randint(0, lvl+5)
         #                     ATTACK || HP || MP || DEFENSE
-        self._item_dict = {'Armor': (0, 20, 4, 10 + player_lvl_bonus),
+        self._item_dict = {'Armour': (0, 20, 4, 10 + player_lvl_bonus),
                            'Weapon': (10 + player_lvl_bonus, 0, 4, 0),
                            'Helm': (0, 10, 4, 5),
                            'Boots': (0, 20, 4, 4),
@@ -160,13 +168,3 @@ class RareItem(Item):
         else:
             item_stats = (random.randint(0, 10), random.randint(0, 30), random.randint(0, 10), random.randint(0, 10))
         super().__init__(*item_stats)
-
-
-# item_dict = {'Armor': None,
-#              'Weapon': None,
-#              'Helm': None,
-#              'Boots': None,
-#              'Ring': None}
-# item_name = random.choice(list(item_dict))
-# print(item_name)
-# print(item_dict[item_name])
