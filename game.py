@@ -281,8 +281,8 @@ class Game:
 # TODO skills: Mage Fireball
 # TODO skills: Rogue Confusion
 # TODO enemies: Dark Shadow
-# TODO game: save state
-# TODO game: console choice?
+# TODO: initiative
+# TODO: skills as classes
 
 def main():
     global dispatcher

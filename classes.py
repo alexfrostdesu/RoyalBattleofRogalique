@@ -557,29 +557,3 @@ class GreaterMonster(Monster):
         self.add_item(RareItem(int(lvl_mult)))
         self._hp = self.get_maxhp()
         self._mp = self.get_maxmp()
-
-
-# TESTING #
-
-# log = ''
-# test = Warrior()
-# testwar = Monster()
-# test.add_exp(100)
-# test.add_exp(100)
-# test.add_exp(100)
-# test._print_stats()
-# log += testwar.attack(test)
-# test._print_stats()
-# log += testwar.attack(test)
-# test._print_stats()
-# log += testwar.attack(test)
-# test._print_stats()
-# log += testwar.attack(test)
-# test.add_exp(100)
-# test.add_exp(100)
-# test.add_item(CommonItem(1))
-# test._print_stats()
-# print(log)
-
-# TODO: initiative
-# TODO: skills as classes
