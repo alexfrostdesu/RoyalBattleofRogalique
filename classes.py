@@ -76,17 +76,17 @@ class Character:
 
 #   MP getters and setters #
 
-    def get_current_mp(self):
+    def get_mp(self):
         """
         Returns character's mp
         """
-        return self._mp
+        return self._mp + self._mp_item_bonus
 
-    def get_maxmp(self):
-        """
-        Returns character's hp
-        """
-        return self._maxmp + self._mp_item_bonus
+    # def get_maxmp(self):
+    #     """
+    #     Returns character's hp
+    #     """
+    #     return self._maxmp + self._mp_item_bonus
 
     def set_mp(self, mp):
         """
@@ -189,8 +189,7 @@ class Character:
         """
         self._maxhp += 10
         self._hp = self.get_maxhp()
-        self._maxmp += 1
-        self._mp = self.get_maxmp()
+        self._mp += 1
         self._attack += 1
         self._exp = 0
 
@@ -285,8 +284,7 @@ class Character:
         stats = dict(CLS=self.get_class(),
                      HP=round(self.get_current_hp(), 2),
                      MAX_HP=round(self.get_maxhp(), 2),
-                     MP=round(self.get_current_mp(), 2),
-                     MAX_MP=round(self.get_maxmp(), 2),
+                     MP=round(self.get_mp(), 2),
                      ATT=round(self.get_attack(), 2),
                      ATT_BONUS=round(self._attack_item_bonus, 2),
                      DEF=round(1 - self.get_defence_modifier(), 2),
@@ -338,7 +336,7 @@ class Mage(Character):
     def __init__(self):
         super().__init__()
         self._cls = 'Mage'
-        self.add_skill({'TYPE': True, 'NAME': 'Fireball', 'POWER': self.get_current_mp() * 3, 'CD': 3, 'CD_MAX': 3})
+        self.add_skill({'TYPE': True, 'NAME': 'Fireball', 'POWER': self.get_mp() * 3, 'CD': 3, 'CD_MAX': 3})
         self._es = self.get_es()
 
 #   ES getter and setter #
@@ -504,10 +502,10 @@ class Rogue(Character):
         """
         if self.get_crit():
             attack = self.get_attack() * self.get_attack_modifier() * 2
-            # DialogMessage('crit', self, attack).get_message()  + "\n"
+            return DialogMessage('crit', self, attack).get_message() + "\n" + other.take_damage_from(attack, self)
         else:
             attack = self.get_attack() * self.get_attack_modifier()
-        return other.take_damage_from(attack, self)
+            return other.take_damage_from(attack, self)
 
     def add_item(self, item):
         """
@@ -556,4 +554,4 @@ class GreaterMonster(Monster):
         self.add_item(RareItem(int(lvl_mult)))
         self.add_item(RareItem(int(lvl_mult)))
         self._hp = self.get_maxhp()
-        self._mp = self.get_maxmp()
+        self._mp = self.get_mp()

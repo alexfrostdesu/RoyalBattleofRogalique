@@ -35,6 +35,22 @@ class Game:
         """
         return self.playerchar
 
+#   Lazy copypast 2 lines at a time #
+
+    def send_stats(self, char):
+        """
+        Shows the stats message
+        """
+        _stats = StatusMessage(char).stats_message()
+        dispatcher.send_message(_stats, self._chat_id, self._player_id)
+
+    def send_inventory(self, char):
+        """
+        Shows the inventory message
+        """
+        _inventory = StatusMessage(char).inventory_message()
+        dispatcher.send_message(_inventory, self._chat_id, self._player_id)
+
     def game_start(self, message):
         """
         Character selection state
@@ -45,10 +61,7 @@ class Game:
             dispatcher.send_message(DialogMessage('start_game').get_message(), self._chat_id, self._player_id)
         else:
             self.playerchar = eval("{}()".format(message))  # creating player character
-            player_stats = StatusMessage(self.playerchar).stats_message()
-            player_inventory = StatusMessage(self.playerchar).inventory_message()
-            dispatcher.send_message(player_stats, self._chat_id, self._player_id)
-            dispatcher.send_message(player_inventory, self._chat_id, self._player_id)
+            self.send_stats(self.playerchar)
             self.set_state('Base')
             dispatcher.send_message(DialogMessage('base').get_message(), self._chat_id, self._player_id)
 
@@ -63,38 +76,69 @@ class Game:
             dispatcher.send_message(DialogMessage('base').get_message(), self._chat_id, self._player_id)
         else:
             if message == 'S':
-                player_stats = StatusMessage(self.playerchar).stats_message()
-                dispatcher.send_message(player_stats, self._chat_id, self._player_id)
+                self.send_stats(self.playerchar)
                 dispatcher.send_message(DialogMessage('base').get_message(), self._chat_id, self._player_id)
             elif message == 'I':
-                player_inventory = StatusMessage(self.playerchar).inventory_message()
-                dispatcher.send_message(player_inventory, self._chat_id, self._player_id)
+                self.send_inventory(self.playerchar)
                 dispatcher.send_message(DialogMessage('base').get_message(), self._chat_id, self._player_id)
             elif message == 'Y':
-                self.enemy = Monster(self.playerchar.get_lvl())  # creating enemy (need work)
-                dispatcher.send_message(DialogMessage('see_enemy_C', self.enemy).get_message(), self._chat_id, self._player_id)
-                enemy_stats = StatusMessage(self.enemy).stats_message()
-                dispatcher.send_message(enemy_stats, self._chat_id, self._player_id)
-                dispatcher.send_message(DialogMessage('attack_enemy').get_message(), self._chat_id, self._player_id)
+                self.choice()
                 self.set_state('Battle Choice')
 
-    def choice(self, message):
+    def choice(self, message=None):
         """
         Battle choice part
         Fight or flight, battle() or base()
         """
-        if message not in ['Y', 'N']: # standard check for right input
+        if message is None:  # Creating the enemy list first time
+            self.enemies = self.create_enemy_list(self.playerchar.get_lvl())  # creating enemy
+            for target in self.enemies:  # sending info for all enemies
+                dispatcher.send_message(DialogMessage('see_enemy_C', target).get_message(), self._chat_id, self._player_id)
+                self.send_stats(target)
+            dispatcher.send_message(DialogMessage('attack_enemy').get_message(), self._chat_id, self._player_id)  # prompting to attack
+        elif message not in ['Y', 'N']:  # standard check for right input
             dispatcher.send_message('Please input correct command', self._chat_id, self._player_id)
             dispatcher.send_message(DialogMessage('attack_enemy').get_message(), self._chat_id, self._player_id)
         else:
             if message == 'Y':
                 self.set_state('Battle')
-                dispatcher.send_message('You are in Battle right now', self._chat_id, self._player_id)
+                # dispatcher.send_message('You are in Battle right now', self._chat_id, self._player_id)
                 self.battle()
             elif message == 'N':
                 self.set_state('Base')
                 dispatcher.send_message('Returning to base', self._chat_id, self._player_id)
                 dispatcher.send_message(DialogMessage('base').get_message(), self._chat_id, self._player_id)
+
+    def create_enemy_list(self, lvl):
+        """
+        Enemy spawn rules
+        Returns list
+        """
+        if lvl < 4:
+            enemy_list = [Monster(lvl)]
+        if 4 <= lvl < 7:
+            roll = random.randint(1, 6)
+            if roll % 3 == 0:
+                enemy_list = [GreaterMonster(lvl)]
+            else:
+                enemy_list = [Monster(lvl)]
+        if 7 <= lvl < 10:
+            roll = random.randint(1, 6)
+            if roll % 2 == 0:
+                enemy_list = [GreaterMonster(lvl)]
+            elif roll % 3 == 0:
+                enemy_list = [GreaterMonster(lvl), Monster(lvl)]
+            else:
+                enemy_list = [Monster(lvl)]
+        if lvl >= 10:
+            roll = random.randint(1, 6)
+            if roll % 6 == 0:
+                enemy_list = [GreaterMonster(lvl), GreaterMonster(lvl)]
+            if roll % 3 == 0:
+                enemy_list = [GreaterMonster(lvl), Monster(lvl)]
+            else:
+                enemy_list = [Monster(lvl), Monster(lvl)]
+        return enemy_list
 
     def battle(self):
         """
@@ -102,30 +146,34 @@ class Game:
         If character is not dead, leads to won_battle()
         """
         battle_log = ""  # creating battle log
-        while self.playerchar.is_alive() and self.enemy.is_alive():
-            battle_log += self.playerchar.attack(self.enemy)  # writing turn into log
-            if not self.enemy.is_alive():
+        while self.playerchar.is_alive():
+            battle_log += self.playerchar.attack(next(enemy for enemy in self.enemies if enemy.is_alive()))
+            for enemy in self.enemies:
+                if enemy.is_alive():
+                    battle_log += enemy.attack(self.playerchar)
+                    if not self.playerchar.is_alive():
+                        battle_log += DialogMessage('won_C', enemy).get_message()
+                        dispatcher.send_message(battle_log, self._chat_id, self._player_id)
+                        dispatcher.send_message(DialogMessage('dead').get_message(), self._chat_id, self._player_id)
+                        dispatcher.send_message(DialogMessage('end_game').get_message(), self._chat_id, self._player_id)
+                        user_list.pop(self._player_id['id'])  # deleting user character
+                        break
+            if all(not enemy.is_alive() for enemy in self.enemies):
                 battle_log += DialogMessage('won_C', self.playerchar).get_message()
                 dispatcher.send_message(battle_log, self._chat_id, self._player_id)
                 self.set_state('Battle Won')
-                self.won_battle(self.enemy)
-                self.enemy = None  # deleting enemy
-                break
-            battle_log += self.enemy.attack(self.playerchar)  # writing turn into log
-            if not self.playerchar.is_alive():
-                battle_log += DialogMessage('won_C', self.enemy).get_message()
-                dispatcher.send_message(battle_log, self._chat_id, self._player_id)
-                dispatcher.send_message(DialogMessage('dead').get_message(), self._chat_id, self._player_id)
-                dispatcher.send_message(DialogMessage('end_game').get_message(), self._chat_id, self._player_id)
-                user_list.pop(self._player_id['id'])  # deleting user character
+                self.won_battle(self.enemies)
+                self.enemies = []  # deleting enemies
                 break
 
-    def won_battle(self, enemy):
+
+    def won_battle(self, enemies):
         """
         After battle is won, hero gets his reward
         """
-        dispatcher.send_message(self.playerchar.add_exp(enemy.get_maxhp()), self._chat_id, self._player_id)
-        self.item_drop(enemy)  # checking for item drop
+        for enemy in enemies:
+            dispatcher.send_message(self.playerchar.add_exp(enemy.get_maxhp()), self._chat_id, self._player_id)
+            self.item_drop(enemy)  # checking for item drop
 
     def item_drop(self, enemy):
         """
@@ -165,20 +213,30 @@ class Game:
                 playeritem = self.playerchar.get_inventory()[item.get_type()]
                 dispatcher.send_message(f"Comparing to your *{playeritem.get_full_name()}*:", self._chat_id, self._player_id)
                 dispatcher.send_message(item.get_compare_stats(playeritem), self._chat_id, self._player_id)
-            self.item_choice()
             self.set_state('Item Choice')
+            self.item_choice()
+
+
+################################################
+#        PODUMOI VOT TUT                       #
+################################################
 
         if enemy_score > 200:
-            item_droplist = [rare_drop(0.5), common_drop(0.2)]
+            item_droplist = [rare_drop(0.5)]
         elif enemy_score > 100:
-            item_droplist = [rare_drop(0.3), common_drop(0.2)]
+            item_droplist = [rare_drop(0.3)]
         elif enemy_score > 50:
-            item_droplist = [rare_drop(0.1), common_drop(0.3)]
+            item_droplist = [common_drop(0.5)]
         else:
             item_droplist = [common_drop(0.2)]
-        for item in item_droplist:  # check out every item
-            if item:
-                check_drop(item)
+
+        if all(item is None for item in item_droplist):  # checks if there no items in drop
+            dispatcher.send_message(DialogMessage('base').get_message(), self._chat_id, self._player_id)
+            self.set_state('Base')
+        else:
+            for item in item_droplist:  # check out every item
+                if item:
+                    check_drop(item)
 
     def item_choice(self, message=None):
         """
@@ -198,83 +256,9 @@ class Game:
                 dispatcher.send_message(player_inventory, self._chat_id, self._player_id)
             elif message == 'N':  # y u no like muh item
                 self.item = None
-            player_stats = StatusMessage(self.playerchar).stats_message()
-            dispatcher.send_message(player_stats, self._chat_id, self._player_id)
+            self.send_stats(self.playerchar)
             dispatcher.send_message(DialogMessage('base').get_message(), self._chat_id, self._player_id)
             self.set_state('Base')
-
-
-        # while playerchar.is_alive():
-        #     dispatcher.send_message(DialogMessage('find_enemy').get_message(), session, player)
-        #     player_input = Message(dispatcher.wait_message()).get_content()
-        #     if player_input == 'I':
-        #         dispatcher.send_message(playerchar._get_all_items(), session, player)
-        #         Game.adventure(playerchar)
-        #         break
-        #     elif player_input == 'N':
-        #         dispatcher.send_message(DialogMessage('end_game').get_message(), session, player)
-        #         break
-        #     else:
-        #         if random.random() < 0.6:
-        #             if random.random() < 0.3 and playerchar.get_lvl() >= 4:
-        #                 enemy = GreaterMonster(playerchar.get_lvl())
-        #             else:
-        #                 enemy = Monster(playerchar.get_lvl())
-        #             enemy_prompt = DialogMessage('see_enemy_C', enemy).get_message() + "\n" \
-        #                            + enemy.get_stats() + "\n"
-        #             dispatcher.send_message(enemy_prompt, session, player)
-        #             dispatcher.send_message(DialogMessage('attack_enemy').get_message(), session, player)
-        #             player_input = Message(dispatcher.wait_message()).get_content()
-        #             if player_input == 'Y':
-        #                 Game.battle_encounter(playerchar, enemy, True)
-        #             else:
-        #                 Game.adventure(playerchar)
-        #                 break
-        #
-        #         else:
-        #             enemy = Monster(playerchar.get_lvl())
-        #             enemy_prompt = DialogMessage('enemy_attack_C', enemy).get_message() + "\n" \
-        #                            + enemy.get_stats() + "\n"
-        #             dispatcher.send_message(enemy_prompt, session, player)
-        #             Game.battle_encounter(playerchar, enemy, False)
-
-    # @staticmethod
-    # def battle_until_death(attacker, defender):
-    #     """
-    #     Takes attacker's and defender's characters and battles them until one of them is dead
-    #     """
-    #     battle_log = ""
-    #     while attacker.is_alive() and defender.is_alive():
-    #         battle_log += attacker.attack(defender)
-    #         if not defender.is_alive():
-    #             battle_log += DialogMessage('won_C', attacker).get_message()
-    #             dispatcher.send_message(battle_log, session, player)
-    #             break
-    #         battle_log += defender.attack(attacker)
-    #         if not attacker.is_alive():
-    #             battle_log += DialogMessage('won_C', defender).get_message()
-    #             dispatcher.send_message(battle_log, session, player)
-    #             break
-    #
-    # @staticmethod
-    # def battle_encounter(playerchar, enemy, first_attack=False):
-    #     """
-    #     Takes playerchar's and enemy's characters and battles them until one of them is dead
-    #     First attack determined by first_attack
-    #     Grants player with random item and exp from monster
-    #     """
-    #     if first_attack:
-    #         Game.battle_until_death(playerchar, enemy)
-    #     else:
-    #         Game.battle_until_death(enemy, playerchar)
-    #     if not playerchar.is_alive():
-    #         dispatcher.send_message(DialogMessage('dead').get_message(), session, player)
-    #         dispatcher.send_message(DialogMessage('end_game').get_message(), session, player)
-    #     else:
-    #         Game.item_drop(enemy)
-    #         dispatcher.send_message(playerchar.add_exp(enemy.get_maxhp()), session, player)
-    #         player_stats = DialogMessage('stats').get_message() + "\n" + playerchar.get_stats() + "\n" + playerchar.get_exp_lvl()
-    #         dispatcher.send_message(player_stats, session, player)
 
 
 # TODO mp -> mf for skills
@@ -306,7 +290,7 @@ def main():
                 elif player_id['id'] in user_list:
                     if new_message.get_content() == '/restart':
                         user_list.pop(player_id['id'])
-                        dispatcher.send_message('Game reseted', chat_id, player_id)
+                        dispatcher.send_message('Game reset', chat_id, player_id)
                     else:
                         player_game = user_list[player_id['id']]
                         game_state = player_game.check_state()
