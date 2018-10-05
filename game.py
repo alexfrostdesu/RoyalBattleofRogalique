@@ -5,7 +5,7 @@ import random
 import time
 import os
 
-
+os.environ["TOKEN"] = '629923481:AAEZkNHau246xFlPYGIUTRlJn8XgSByzHnA' #### DELETE YHIS ####
 
 TOKEN = os.environ["TOKEN"]
 
@@ -35,7 +35,7 @@ class Game:
         """
         return self.playerchar
 
-#   Lazy copypast 2 lines at a time #
+#   Lazy copypaste 2 lines at a time #
 
     def send_stats(self, char):
         """
@@ -82,12 +82,12 @@ class Game:
                 self.send_inventory(self.playerchar)
                 dispatcher.send_message(DialogMessage('base').get_message(), self._chat_id, self._player_id)
             elif message == 'Y':
-                self.choice()
+                self.battle_choice()
                 self.set_state('Battle Choice')
 
-    def choice(self, message=None):
+    def battle_choice(self, message=None):
         """
-        Battle choice part
+        Battle battle_choice part
         Fight or flight, battle() or base()
         """
         if message is None:  # Creating the enemy list first time
@@ -166,26 +166,26 @@ class Game:
                 self.enemies = []  # deleting enemies
                 break
 
-
     def won_battle(self, enemies):
         """
         After battle is won, hero gets his reward
         """
         for enemy in enemies:
             dispatcher.send_message(self.playerchar.add_exp(enemy.get_maxhp()), self._chat_id, self._player_id)
-            self.item_drop(enemy)  # checking for item drop
+        self.check_drop(enemies)  # checking for item drop
 
-    def item_drop(self, enemy):
+    def check_drop(self, enemies):
         """
         Rolling for items and applying them to the character
         """
+        # healing potion in a dire need of rewrite
         if random.randint(1, 6) % 3 == 0:
-            item = 'Healing Potion'
-            item_healing = random.randint(10, int(enemy.get_maxhp()))
-            dispatcher.send_message(f"You found a *{item}*!\n" + DialogMessage('healed_CA', self.playerchar, item_healing).get_message(), self._chat_id, self._player_id)
+            hp = 'Healing Potion'
+            item_healing = random.randint(10, int(enemies[0].get_maxhp()))
+            dispatcher.send_message(f"You found a *{hp}*!\n" + DialogMessage('healed_CA', self.playerchar, item_healing).get_message(), self._chat_id, self._player_id)
             self.playerchar.set_hp(self.playerchar.get_current_hp() + item_healing)
 
-        enemy_score = enemy.get_maxhp() + enemy.get_attack()
+        #   Lazy copypaste 2 lines at a time #
 
         def rare_drop(chance):
             """
@@ -203,59 +203,64 @@ class Game:
             if random.random() < chance:
                 return CommonItem(self.playerchar.get_lvl())
 
-        def check_drop(item):
-            """
-            Checking drop and sending game to 'Item Choice' state
-            """
-            self.item = item
-            dispatcher.send_message(DialogMessage('found_item_I', item).get_message() + "\n" + item.get_stats(), self._chat_id, self._player_id)
-            if self.playerchar.get_inventory()[item.get_type()]:
-                playeritem = self.playerchar.get_inventory()[item.get_type()]
-                dispatcher.send_message(f"Comparing to your *{playeritem.get_full_name()}*:", self._chat_id, self._player_id)
-                dispatcher.send_message(item.get_compare_stats(playeritem), self._chat_id, self._player_id)
-            self.set_state('Item Choice')
-            self.item_choice()
+        self.item_drop = []
 
+        for enemy in enemies:
+            enemy_score = enemy.get_maxhp() + enemy.get_attack()
+            if enemy_score > 200:
+                drop = rare_drop(1)
+                if drop:
+                    self.item_drop.append(drop)
+            elif enemy_score > 100:
+                drop = rare_drop(1)
+                if drop:
+                    self.item_drop.append(drop)
+            elif enemy_score > 50:
+                drop = common_drop(1)
+                if drop:
+                    self.item_drop.append(drop)
+            else:
+                drop = common_drop(1)
+                if drop:
+                    self.item_drop.append(drop)
 
-################################################
-#        PODUMOI VOT TUT                       #
-################################################
-
-        if enemy_score > 200:
-            item_droplist = [rare_drop(0.5)]
-        elif enemy_score > 100:
-            item_droplist = [rare_drop(0.3)]
-        elif enemy_score > 50:
-            item_droplist = [common_drop(0.5)]
-        else:
-            item_droplist = [common_drop(0.2)]
-
-        if all(item is None for item in item_droplist):  # checks if there no items in drop
+        if all(item is None for item in self.item_drop):
             dispatcher.send_message(DialogMessage('base').get_message(), self._chat_id, self._player_id)
             self.set_state('Base')
         else:
-            for item in item_droplist:  # check out every item
-                if item:
-                    check_drop(item)
+            self.set_state('Item Choice')
+            self.item_choice()
 
     def item_choice(self, message=None):
         """
-        Player choice of equipping the item
+        Player battle_choice of equipping the item
         None is a dirty hack and I am not proud
         """
         if message not in ['Y', 'N', None]:
             dispatcher.send_message('Please input correct command', self._chat_id, self._player_id)
             dispatcher.send_message(DialogMessage('equip_item').get_message(), self._chat_id, self._player_id)
         elif message is None:  # dirty hack
+            self.item = self.item_drop[0]  # checking out first available item
+            dispatcher.send_message(DialogMessage('found_item_I', self.item).get_message() + "\n" + self.item.get_stats(), self._chat_id, self._player_id)
+            if self.playerchar.get_inventory()[self.item.get_type()]:
+                playeritem = self.playerchar.get_inventory()[self.item.get_type()]
+                dispatcher.send_message(f"Comparing to your *{playeritem.get_full_name()}*:", self._chat_id, self._player_id)
+                dispatcher.send_message(self.item.get_compare_stats(playeritem), self._chat_id, self._player_id)
             dispatcher.send_message(DialogMessage('equip_item').get_message(), self._chat_id, self._player_id)
+            self.item_drop.pop(0)  # deleting first available item
         else:
             if message == 'Y':
                 self.playerchar.add_item(self.item)
                 self.item = None
-                player_inventory = StatusMessage(self.playerchar).inventory_message()
-                dispatcher.send_message(player_inventory, self._chat_id, self._player_id)
+                self.send_inventory(self.playerchar)
+                if self.item_drop != []:  # small dirty hacks, don't tell anyone
+                    self.item_choice()
+                    return None
             elif message == 'N':  # y u no like muh item
                 self.item = None
+                if self.item_drop != []: # small dirty hacks, don't tell anyone
+                    self.item_choice()
+                    return None
             self.send_stats(self.playerchar)
             dispatcher.send_message(DialogMessage('base').get_message(), self._chat_id, self._player_id)
             self.set_state('Base')
@@ -299,7 +304,7 @@ def main():
                         elif game_state == 'Base':
                             player_game.base(content)
                         elif game_state == 'Battle Choice':
-                            player_game.choice(content)
+                            player_game.battle_choice(content)
                         elif game_state == 'Item Choice':
                             player_game.item_choice(content)
                         # dispatcher.send_message(game_state, chat_id, player_id)

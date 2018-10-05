@@ -14,10 +14,10 @@ class DialogMessage:
             self._target = target.get_class()
         # with open('all_messages.txt') as msg_list:
         #     all_messages = dict(x.rstrip().split(':') for x in msg_list)
-        all_messages = dict(attack_CAT=f"{self._character} attacked {self._target} for {self._amount} HP damage!",
-                            attack_es_CAT=f"{self._character} attacked {self._target} for {self._amount} ES damage!",
-                            broke_es_C=f"{self._character}'s Energy Shield is destroyed!",
-                            broke_es_dmg_hp_CAT=f"{self._character} broke {self._target}'s Energy Shield, while also dealing {self._amount} HP damage!",
+        all_messages = dict(attack_CAT=f"*{self._character}* attacked *{self._target}* for *{self._amount} HP* damage!",
+                            attack_es_CAT=f"*{self._character}* attacked *{self._target}* for {self._amount} ES damage!",
+                            broke_es_C=f"*{self._character}*'s Energy Shield is destroyed!",
+                            broke_es_dmg_hp_CAT=f"*{self._character}* broke *{self._target}*'s Energy Shield, while also dealing *{self._amount}* HP damage!",
                             evaded_CA=f"{self._character} evaded {self._amount} damage!",
                             crit="Critical hit!",
                             lvlup_CA=f"{self._character} got a level up! Your level is now {self._amount}",
@@ -28,7 +28,7 @@ class DialogMessage:
                             start_game="*Select your character*:```\nMage \nWarrior \nRogue```",
                             base="Do you want to go and kill some monsters? *(Y/I/S)*```\nY - Go and find some monsters \nI - Show inventory \nS - Show stats```",
                             see_enemy_C=f"You see a {self._character} in the distance.",
-                            attack_enemy="Do you want to attack this enemy? *(Y/N)*```\nY - Attack the enemy \nN - Retreat to base```",
+                            attack_enemy="Do you want to attack? *(Y/N)*```\nY - Attack the enemy \nN - Retreat to base```",
                             enemy_attack_C=f"You are attacked by {self._character}!",
                             found_item_I=f"You found a {self._item}!",
                             end_game="Your adventure ends here.\nType /start to start new game.",
