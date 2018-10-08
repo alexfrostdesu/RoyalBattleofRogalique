@@ -115,7 +115,7 @@ class Item:
         print(f"Bonus Defence: {self._bonus_defence}")
 
     def get_stats(self):
-        stats = f"*{self.get_full_name()}*" + \
+        stats = f"*{self.get_full_name()}*\n" + \
                 f"```\nBonus Damage: ".ljust(15) + f"| {self._bonus_attack}" + \
                 f"\nBonus HP:".ljust(15) + f"| {self._bonus_hp}" + \
                 f"\nBonus MP:".ljust(15) + f"| {self._bonus_mp}" + \

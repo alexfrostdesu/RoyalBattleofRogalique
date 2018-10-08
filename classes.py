@@ -96,11 +96,14 @@ class Character:
 
 #   Attack getters and setters #
 
-    def get_attack(self):
+    def get_attack_stat(self):
         """
-        Returns character's attack
+        Returns character's attack stat
         """
         return self._attack + self._attack_item_bonus
+
+    def get_attack(self):
+        return random.uniform((self._attack + self._attack_item_bonus) * 0.9, (self._attack + self._attack_item_bonus) * 1.1)
 
     def set_attack(self, attack):
         """
@@ -192,6 +195,7 @@ class Character:
         self._mp += 1
         self._attack += 1
         self._exp = 0
+        self.recount_skill_stats()
 
 #   Items and inventory #
 
@@ -204,6 +208,7 @@ class Character:
         else:
             self._inventory[item.get_type()] = item
             self.recount_item_bonus()
+            self.recount_skill_stats()
 
     def get_inventory(self):
         """
@@ -240,9 +245,37 @@ class Character:
         """
         Adds skill to character
         """
-        self._skills += skill
+        self._skills.append(skill)
 
-    # skill = {'TYPE': True (Attack) or False (Defence), 'NAME' = 'SkillName', 'POWER' = amount, 'CD' = amount, 'CD_MAX' = amount}
+    def recount_skill_stats(self):
+        """
+        Recounts all skills all stats
+        """
+        for skill in self._skills:
+            skill.recount(self)
+
+    def is_skill_available(self):
+        """
+        Returns if any of skills are available
+        """
+        for skill in self.get_skills():
+            if skill.is_available():
+                return True
+        return False
+
+    def first_available_skill(self):
+        """
+        Cycles through character's skills and returns first spell that is ready to be used
+        Skills are in order of first added
+        """
+        for skill in self.get_skills():
+            if skill.is_available():
+                return skill
+
+    def use_skill(self, skill, other):
+        damage = skill.get_damage()
+        return DialogMessage('used_skill_C', self).get_message() + "\n" + other.take_damage_pure(damage, self)
+
 
 #   is_alive check #
 
@@ -262,11 +295,12 @@ class Character:
         self._hp -= damage * self.get_defence_modifier()
         return DialogMessage('attack_CAT', other, damage * self.get_defence_modifier(), self).get_message()  + "\n"
 
-    def take_damage_pure(self, damage):
+    def take_damage_pure(self, damage, other):
         """
-        Takes pure damage
+        Takes pure damage from skills
         """
         self._hp -= damage
+        return DialogMessage('attack_pure_CAT', other, damage, self).get_message() + "\n"
 
     def attack(self, other):
         """
@@ -285,7 +319,7 @@ class Character:
                      HP=round(self.get_current_hp(), 2),
                      MAX_HP=round(self.get_maxhp(), 2),
                      MP=round(self.get_mp(), 2),
-                     ATT=round(self.get_attack(), 2),
+                     ATT=round(self.get_attack_stat(), 2),
                      ATT_BONUS=round(self._attack_item_bonus, 2),
                      DEF=round(1 - self.get_defence_modifier(), 2),
                      LVL=self.get_lvl(),
@@ -336,8 +370,8 @@ class Mage(Character):
     def __init__(self):
         super().__init__()
         self._cls = 'Mage'
-        self.add_skill({'TYPE': True, 'NAME': 'Fireball', 'POWER': self.get_mp() * 3, 'CD': 3, 'CD_MAX': 3})
         self._es = self.get_es()
+        self.add_skill(Fireball(self))
 
 #   ES getter and setter #
 
@@ -555,3 +589,97 @@ class GreaterMonster(Monster):
         self.add_item(RareItem(int(lvl_mult)))
         self._hp = self.get_maxhp()
         self._mp = self.get_mp()
+
+
+class Skill:
+    def __init__(self, character):
+        self._character = character
+        self._cooldown = 0
+        self._current_cd = 0
+
+    def get_character(self):
+        """
+        Returns skill's owner stats
+        """
+        return self._character
+
+    def recount(self, character):
+        self._character = character
+
+    def get_character_mp(self):
+        """
+        Returns character's es
+        """
+        return self._character.get_mp()
+
+    def get_character_hp(self):
+        """
+        Returns character's hp
+        """
+        return self._character.get_hp()
+
+    def get_character_attack(self):
+        """
+        Returns character's attack
+        """
+        return self._character.get_attack()
+
+    def get_name(self):
+        return self.__class__.__name__
+
+
+
+    def get_cooldown_timer(self):
+        """
+        Returns spells's cd timer
+        """
+        return self._cooldown
+
+    def set_cooldown_timer(self, cd):
+        """
+        Sets spells's cd timer
+        """
+        self._cooldown = cd
+
+    def get_current_cd(self):
+        """
+        Returns spell's current cd
+        """
+        return self._current_cd
+
+    def set_current_cd(self, cd):
+        """
+        Set new amount for current cd
+        More then max cd = max cd
+        Less then 0 = 0
+        """
+        if cd < 0:
+            self._current_cd = 0
+        elif cd <= self._cooldown:
+            self._current_cd = cd
+        else:
+            self._current_cd = self._cooldown
+
+    def is_available(self):
+        """
+        Returns if spell is ready to use
+        """
+        return self._current_cd == 0
+
+
+
+class Fireball(Skill):
+    def __init__(self, character):
+        super().__init__(character)
+        self._damage = self._character.get_mp() * 2
+        self._cooldown = 5
+        self._current_cd = 0
+
+    def get_damage(self):
+        """
+        Returns spell's damage
+        """
+        return self._character.get_mp() * 2
+
+
+

@@ -147,7 +147,14 @@ class Game:
         """
         battle_log = ""  # creating battle log
         while self.playerchar.is_alive():
-            battle_log += self.playerchar.attack(next(enemy for enemy in self.enemies if enemy.is_alive()))
+            for skill in self.playerchar.get_skills():
+                skill.set_current_cd(skill.get_current_cd() - 1)
+            if self.playerchar.is_skill_available():
+                skill = self.playerchar.first_available_skill()
+                battle_log += self.playerchar.use_skill(skill, next(enemy for enemy in self.enemies if enemy.is_alive()))
+                skill.set_current_cd(skill.get_cooldown_timer())
+            else:
+                battle_log += self.playerchar.attack(next(enemy for enemy in self.enemies if enemy.is_alive()))
             for enemy in self.enemies:
                 if enemy.is_alive():
                     battle_log += enemy.attack(self.playerchar)
@@ -163,6 +170,8 @@ class Game:
                 dispatcher.send_message(battle_log, self._chat_id, self._player_id)
                 self.set_state('Battle Won')
                 self.won_battle(self.enemies)
+                for skill in self.playerchar.get_skills():
+                    skill.set_current_cd(0)
                 self.enemies = []  # deleting enemies
                 break
 
