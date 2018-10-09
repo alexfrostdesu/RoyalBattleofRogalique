@@ -1,20 +1,20 @@
-attack_CAT:f"{self._character} attacked {self._target} for {self._amount} HP damage!"
-attack_es_CAT:f"{self._character} attacked {self._target} for {self._amount} ES damage!"
-broke_es_C:f"{self._character}'s Energy Shield is destroyed!"
-broke_es_dmg_hp_CAT:f"{self._character} broke {self._target}'s Energy Shield, while also dealing {self._amount} HP damage!"
-evaded_CA:f"{self._character} evaded {self._amount} damage!"
-crit:"Critical hit!"
-lvlup_C:f"{self._character} got a level up!"
-healed_CA:f"{self._character} was healed for {self._amount} HP"
-won_C:f"{self._character} has won the battle!"
-lost_C:f"{self._character} has lost the battle!"
-exp_C:f"Current Experience {self._exp}, Next Level {self._exp_next_lvl}"
-stats:"Your character's stats"
-start_game:"Select your character\nMage \nWarrior \nRogue"
-find_enemy:"Do you want to go and kill some monsters? (Y/N/I)"
-see_enemy_C:f"You see a {self._character} in the distance."
-attack_enemy:"Do you want to attack this enemy? (Y/N)"
-enemy_attack_C:f"You are attacked by {self._character}!"
-found_item_I:f"You found a {self._item}!"
-end_game:"Your adventure ends here."
-dead:"Your character is dead."
+'attack_CAT':f"{self._character} attacked {self._target} for {self._amount} HP damage!",
+'attack_es_CAT':f"{self._character} attacked {self._target} for {self._amount} ES damage!",
+'broke_es_C':f"{self._character}'s Energy Shield is destroyed!",
+'broke_es_dmg_hp_CAT':f"{self._character} broke {self._target}'s Energy Shield, while also dealing {self._amount} HP damage!",
+'evaded_CA':f"{self._character} evaded {self._amount} damage!",
+'crit':"Critical hit!",
+'lvlup_C':f"{self._character} got a level up!",
+'healed_CA':f"{self._character} was healed for {self._amount} HP",
+'won_C':f"{self._character} has won the battle!",
+'lost_C':f"{self._character} has lost the battle!",
+'exp_C':f"Current Experience {self._exp}, Next Level {self._exp_next_lvl}",
+'stats':"Your character's stats",
+'start_game':"Select your character:\nMage \nWarrior \nRogue",
+'find_enemy':"Do you want to go and kill some monsters? (Y/N/I)",
+'see_enemy_C':f"You see a {self._character} in the distance.",
+'attack_enemy':"Do you want to attack this enemy? (Y/N)",
+'enemy_attack_C':f"You are attacked by {self._character}!",
+'found_item_I':f"You found a {self._item}!",
+'end_game':"Your adventure ends here.\nType /start to start new game.",
+'dead':"Your character is dead."

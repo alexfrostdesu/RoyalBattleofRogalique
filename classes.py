@@ -5,25 +5,22 @@ import math
 
 
 class Character:
-    default_hp = 100
-    default_mp = 0
-    default_attack = 10
-    default_exp = 0
-    default_lvl = 1
+    _maxhp = 100
+    _mp = 0
+    _attack = 10
+    _exp = 0
+    _lvl = 1
+    _gold = 0
     _character = True
 
     def __init__(self):
         self._cls = 'Character'
         self._armour = 0
-        self._stash = []
         self._inventory = {'Armour': None, 'Weapon': None, 'Helm': None, 'Boots': None, 'Ring': None}
-        self._maxhp = self._hp = self.default_hp
-        self._maxmp = self._mp = self.default_mp
         self._skills = []
-        self._attack = self.default_attack
-        self._lvl = self.default_lvl
-        self._exp = self.default_exp
+        self._passives = {}
         self.recount_item_bonus()
+        self._hp = self._maxhp = self.get_maxhp()
 
 #   Class getters and setters #
 
@@ -82,17 +79,25 @@ class Character:
         """
         return self._mp + self._mp_item_bonus
 
-    # def get_maxmp(self):
-    #     """
-    #     Returns character's hp
-    #     """
-    #     return self._maxmp + self._mp_item_bonus
-
     def set_mp(self, mp):
         """
         Takes new value for character's mp and sets it
         """
         self._mp = mp
+
+#   Gold getters and setters #
+
+    def get_gold(self):
+        """
+        Returns character's mp
+        """
+        return self._gold
+
+    def set_gold(self, gold):
+        """
+        Takes new value for character's mp and sets it
+        """
+        self._gold = gold
 
 #   Attack getters and setters #
 
@@ -103,6 +108,9 @@ class Character:
         return self._attack + self._attack_item_bonus
 
     def get_attack(self):
+        """
+        Returns character's attack (+-10%)
+        """
         return random.uniform((self._attack + self._attack_item_bonus) * 0.9, (self._attack + self._attack_item_bonus) * 1.1)
 
     def set_attack(self, attack):
@@ -195,7 +203,6 @@ class Character:
         self._mp += 1
         self._attack += 1
         self._exp = 0
-        self.recount_skill_stats()
 
 #   Items and inventory #
 
@@ -208,7 +215,6 @@ class Character:
         else:
             self._inventory[item.get_type()] = item
             self.recount_item_bonus()
-            self.recount_skill_stats()
 
     def get_inventory(self):
         """
@@ -247,19 +253,12 @@ class Character:
         """
         self._skills.append(skill)
 
-    def recount_skill_stats(self):
-        """
-        Recounts all skills all stats
-        """
-        for skill in self._skills:
-            skill.recount(self)
-
     def is_skill_available(self):
         """
         Returns if any of skills are available
         """
         for skill in self.get_skills():
-            if skill.is_available():
+            if skill.get_current_cd() == 0:
                 return True
         return False
 
@@ -269,13 +268,18 @@ class Character:
         Skills are in order of first added
         """
         for skill in self.get_skills():
-            if skill.is_available():
+            if skill.get_current_cd() == 0:
                 return skill
 
-    def use_skill(self, skill, other):
+    def use_attack_skill(self, skill, other):
         damage = skill.get_damage()
         return DialogMessage('used_skill_C', self).get_message() + "\n" + other.take_damage_pure(damage, self)
 
+    def get_passives(self):
+        """
+        Returns character's passives (only names and descriptions)
+        """
+        return self._passives
 
 #   is_alive check #
 
@@ -316,17 +320,19 @@ class Character:
         Returns character's stats in a dictionary
         """
         stats = dict(CLS=self.get_class(),
-                     HP=round(self.get_current_hp(), 2),
-                     MAX_HP=round(self.get_maxhp(), 2),
-                     MP=round(self.get_mp(), 2),
+                     HP=self.get_current_hp(),
+                     MAX_HP=self.get_maxhp(),
+                     MP=self.get_mp(),
                      ATT=round(self.get_attack_stat(), 2),
                      ATT_BONUS=round(self._attack_item_bonus, 2),
                      DEF=round(1 - self.get_defence_modifier(), 2),
                      LVL=self.get_lvl(),
                      EXP=round(self.get_exp(), 2),
                      EXPLVL=round(self.get_exp_to_next_lvl(), 2),
+                     GOLD=self.get_gold(),
                      INV=self.get_inventory(),
-                     SKILLS=self.get_skills())
+                     SKILLS=self.get_skills(),
+                     PASSIVES=self.get_passives())
         return stats
 
 #   testing used stuff #
@@ -363,15 +369,21 @@ class Character:
 
 
 class Mage(Character):
-    default_hp = 85
-    default_mp = 10
-    default_attack = 8
+    _hp = 85
+    _mp = 10
+    _attack = 8
 
     def __init__(self):
         super().__init__()
         self._cls = 'Mage'
         self._es = self.get_es()
+        # fireball = dict(NAME='Fireball',
+        #                 DMG=self.get_mp() * 2,
+        #                 CD=0,
+        #                 CD_TIMER=5)
         self.add_skill(Fireball(self))
+        self._passives['Energy Shield'] = "This passive allows Mage to absorb some of incoming damage.\n" \
+                                          "ES scales with MP and lvl"
 
 #   ES getter and setter #
 
@@ -379,7 +391,7 @@ class Mage(Character):
         """
         Returns character's es
         """
-        return self.default_mp * (self.get_lvl() / 2)
+        return self._mp * (self.get_lvl() / 2)
 
     def _set_es(self, es):
         """
@@ -427,13 +439,15 @@ class Mage(Character):
 
 
 class Warrior(Character):
-    default_hp = 110
+    _hp = 100
     hp_mult = 1.1
 
     def __init__(self):
         super().__init__()
         self._cls = 'Warrior'
-        self._maxhp = self._hp = self.default_hp * self.hp_mult
+        self._maxhp = self._hp = self.get_maxhp()
+        self._passives['Warrior Blood'] = "This passive adds Warrior additional defence for every missing HP.\n"
+        self._passives['Great Health'] = "This passive adds additional defence for Warrior.\n"
 
 #   HP modifier, but with passive #
 
@@ -441,7 +455,13 @@ class Warrior(Character):
         """
         Returns character's attack modifier
         """
-        return self._hp_item_bonus * self.hp_mult
+        return self._hp_item_bonus
+
+    def get_maxhp(self):
+        """
+        Returns character's maxhp
+        """
+        return (self._maxhp + self.get_hp_modifier()) * self.hp_mult
 
 #   Armour passive getter #
 
@@ -470,13 +490,18 @@ class Warrior(Character):
 
 
 class Rogue(Character):
-    crit_chance = 0.2
-    evade_chance = 0.2
-    default_attack = 15
+    _crit_chance = 0.2
+    _evade_chance = 0.2
+    _attack = 15
 
     def __init__(self):
         super().__init__()
         self._cls = 'Rogue'
+        self._evade_chance = self._evade_chance + 0.01 * self.get_mp()
+        self._passives['Evasion'] = "This passive allows Rogue to evade some of incoming damage.\n" \
+                                    "EV scales with MP"
+        self._passives['Critical Strike'] = "This passive allows Rogue to double the damage some of his attacks.\n" \
+                                            "Crit chance scales with MP"
 
 #   Evasion getters and setters #
 
@@ -484,13 +509,13 @@ class Rogue(Character):
         """
         Returns character's evade chance
         """
-        return self.evade_chance
+        return self._evade_chance + 0.01 * self.get_mp()
 
     def set_evasion(self, ev):
         """
         Sets character's evade chance
         """
-        self.evade_chance = ev
+        self._evade_chance = ev
 
     def get_dodge(self):
         """
@@ -504,13 +529,13 @@ class Rogue(Character):
         """
         Returns character's evade chance
         """
-        return self.crit_chance
+        return self._crit_chance + 0.01 * self.get_mp()
 
     def set_crit_chance(self, chance):
         """
         Takes new value for character's evade chance and sets it
         """
-        self.crit_chance = chance
+        self._crit_chance = chance
 
     def get_crit(self):
         """
@@ -558,7 +583,7 @@ class Rogue(Character):
         """
         stats = super().get_stats()
         stats['EV_CHANCE'] = self.get_evasion()
-        stats['CRT_CHANCE'] = self.get_crit_chance()
+        stats['CRIT_CHANCE'] = self.get_crit_chance()
         return stats
 
 
@@ -566,17 +591,11 @@ class Monster(Character):
     def __init__(self, lvl_mult=1):
         super().__init__()
         self._cls = 'Monster'
-        self._lvl_mult = lvl_mult / math.sqrt(lvl_mult)
-        self._maxhp = self._hp = (random.randint(20, 40) * self._lvl_mult)
-        self._mp = self._maxmp = (random.randint(1, 1) * self._lvl_mult)
+        self._lvl_mult = lvl_mult / math.sqrt(lvl_mult * 2)
+        self._maxhp = (random.randint(21, 40) * self._lvl_mult)
+        self._hp = self.get_maxhp()
+        self._mp = (random.randint(1, 1) * self._lvl_mult)
         self._attack = (random.randint(1, 15) * self._lvl_mult)
-
-    def add_item(self, item):
-        if item is None:
-            pass
-        else:
-            self._inventory[item.get_type()] = item
-            self.recount_item_bonus()
 
 
 class GreaterMonster(Monster):
@@ -593,41 +612,21 @@ class GreaterMonster(Monster):
 
 class Skill:
     def __init__(self, character):
-        self._character = character
+        self._owner = character
         self._cooldown = 0
         self._current_cd = 0
 
-    def get_character(self):
+    def get_owner(self):
         """
-        Returns skill's owner stats
+        Returns skill's owner
         """
-        return self._character
-
-    def recount(self, character):
-        self._character = character
-
-    def get_character_mp(self):
-        """
-        Returns character's es
-        """
-        return self._character.get_mp()
-
-    def get_character_hp(self):
-        """
-        Returns character's hp
-        """
-        return self._character.get_hp()
-
-    def get_character_attack(self):
-        """
-        Returns character's attack
-        """
-        return self._character.get_attack()
+        return self._owner
 
     def get_name(self):
+        """
+        Returns skill's name
+        """
         return self.__class__.__name__
-
-
 
     def get_cooldown_timer(self):
         """
@@ -667,11 +666,9 @@ class Skill:
         return self._current_cd == 0
 
 
-
 class Fireball(Skill):
     def __init__(self, character):
         super().__init__(character)
-        self._damage = self._character.get_mp() * 2
         self._cooldown = 5
         self._current_cd = 0
 
@@ -679,7 +676,16 @@ class Fireball(Skill):
         """
         Returns spell's damage
         """
-        return self._character.get_mp() * 2
+        return self._owner.get_mp() * 1.5
 
+
+
+
+# mage = Mage()
+# mage.set_mp(15)
+# print(mage.get_skills()[0].get_damage())
+# mage.set_mp(20)
+# print(mage.get_skills()[0].get_damage())
+# #{k: bigdict[k] for k in ('l', 'm', 'n')}
 
 

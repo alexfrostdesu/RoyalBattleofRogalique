@@ -5,8 +5,6 @@ import random
 import time
 import os
 
-os.environ["TOKEN"] = '629923481:AAEZkNHau246xFlPYGIUTRlJn8XgSByzHnA' #### DELETE YHIS ####
-
 TOKEN = os.environ["TOKEN"]
 
 
@@ -151,7 +149,7 @@ class Game:
                 skill.set_current_cd(skill.get_current_cd() - 1)
             if self.playerchar.is_skill_available():
                 skill = self.playerchar.first_available_skill()
-                battle_log += self.playerchar.use_skill(skill, next(enemy for enemy in self.enemies if enemy.is_alive()))
+                battle_log += self.playerchar.use_attack_skill(skill, next(enemy for enemy in self.enemies if enemy.is_alive()))
                 skill.set_current_cd(skill.get_cooldown_timer())
             else:
                 battle_log += self.playerchar.attack(next(enemy for enemy in self.enemies if enemy.is_alive()))
@@ -181,6 +179,7 @@ class Game:
         """
         for enemy in enemies:
             dispatcher.send_message(self.playerchar.add_exp(enemy.get_maxhp()), self._chat_id, self._player_id)
+            self.playerchar.set_gold(self.playerchar.get_gold() + int(enemy.get_attack()))
         self.check_drop(enemies)  # checking for item drop
 
     def check_drop(self, enemies):
@@ -188,7 +187,7 @@ class Game:
         Rolling for items and applying them to the character
         """
         # healing potion in a dire need of rewrite
-        if random.randint(1, 6) % 3 == 0:
+        if random.randint(1, 6) % 6 == 0:
             hp = 'Healing Potion'
             item_healing = random.randint(10, int(enemies[0].get_maxhp()))
             dispatcher.send_message(f"You found a *{hp}*!\n" + DialogMessage('healed_CA', self.playerchar, item_healing).get_message(), self._chat_id, self._player_id)
@@ -217,19 +216,19 @@ class Game:
         for enemy in enemies:
             enemy_score = enemy.get_maxhp() + enemy.get_attack()
             if enemy_score > 200:
-                drop = rare_drop(1)
+                drop = rare_drop(0.5)
                 if drop:
                     self.item_drop.append(drop)
             elif enemy_score > 100:
-                drop = rare_drop(1)
+                drop = rare_drop(0.3)
                 if drop:
                     self.item_drop.append(drop)
             elif enemy_score > 50:
-                drop = common_drop(1)
+                drop = common_drop(0.5)
                 if drop:
                     self.item_drop.append(drop)
             else:
-                drop = common_drop(1)
+                drop = common_drop(0.3)
                 if drop:
                     self.item_drop.append(drop)
 
@@ -262,15 +261,15 @@ class Game:
                 self.playerchar.add_item(self.item)
                 self.item = None
                 self.send_inventory(self.playerchar)
+                self.send_stats(self.playerchar)
                 if self.item_drop != []:  # small dirty hacks, don't tell anyone
                     self.item_choice()
                     return None
             elif message == 'N':  # y u no like muh item
                 self.item = None
-                if self.item_drop != []: # small dirty hacks, don't tell anyone
+                if self.item_drop != []:  # small dirty hacks, don't tell anyone
                     self.item_choice()
                     return None
-            self.send_stats(self.playerchar)
             dispatcher.send_message(DialogMessage('base').get_message(), self._chat_id, self._player_id)
             self.set_state('Base')
 

@@ -70,7 +70,18 @@ class StatusMessage:
               f"`Attack  |  {self._stats['ATT'] - self._stats['ATT_BONUS']:1.0f} + {self._stats['ATT_BONUS']:1.0f}`\n" \
               f"`Defence |  {self._stats['DEF'] * 100:1.0f}%`\n" \
               f"`LVL     |  {self._stats['LVL']}`\n" \
-              f"`EXP     |  {self._stats['EXP']:1.0f}/{self._stats['EXPLVL']:1.0f}`"
+              f"`EXP     |  {self._stats['EXP']:1.0f}/{self._stats['EXPLVL']:1.0f}`\n" \
+              f"`Gold    |  {self._stats['GOLD']:1.0f}`\n"
+        if self._stats.get('ES'):
+            msg += f"`ES      |  {self._stats['ES']:1.0f}`\n"
+        if self._stats.get('EV_CHANCE'):
+            msg += f"`EV      |  {self._stats['EV_CHANCE'] * 100:1.0f}%`\n"
+        if self._stats.get('CRIT_CHANCE'):
+            msg += f"`Crit    |  {self._stats['CRIT_CHANCE'] * 100:1.0f}%`\n"
+        if self._stats.get('PASSIVES'):
+            msg += f"Passive skills:\n"
+            for passive in self._stats['PASSIVES']:
+                msg += f"`{passive}`\n"
         return msg
 
     def inventory_message(self):
