@@ -18,8 +18,6 @@ class DialogMessage:
         if target is not None and (
                 target.get_character() or target.__class__.__bases__[0].__name__ in ('Character', 'Monster')):
             self._target = target.get_class()
-        # with open('all_messages.txt') as msg_list:
-        #     all_messages = dict(x.rstrip().split(':') for x in msg_list)
 
     def get_message(self):
         messages = dict(

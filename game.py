@@ -2,7 +2,6 @@ from classes import *
 from events import DialogMessage, StatusMessage
 from bot_handler import BotHandler, Message
 import random
-import time
 import os
 
 TOKEN = os.environ["TOKEN"]
@@ -17,7 +16,7 @@ class Game:
 
     def check_state(self):
         """
-        Get current game state
+        Return current game state
         """
         return self._game_state
 
@@ -48,6 +47,8 @@ class Game:
         """
         _inventory = StatusMessage(char).inventory_message()
         dispatcher.send_message(_inventory, self._chat_id, self._player_id)
+
+#   Game start block #
 
     def game_start(self, message):
         """
@@ -100,7 +101,6 @@ class Game:
         else:
             if message == 'Y':
                 self.set_state('Battle')
-                # dispatcher.send_message('You are in Battle right now', self._chat_id, self._player_id)
                 self.battle()
             elif message == 'N':
                 self.set_state('Base')
@@ -110,7 +110,7 @@ class Game:
     def create_enemy_list(self, lvl):
         """
         Enemy spawn rules
-        Returns list
+        Returns list of enemies
         """
         if lvl < 4:
             enemy_list = [Monster(lvl)]
@@ -179,7 +179,7 @@ class Game:
         """
         for enemy in enemies:
             dispatcher.send_message(self.playerchar.add_exp(enemy.get_maxhp()), self._chat_id, self._player_id)
-            self.playerchar.set_gold(self.playerchar.get_gold() + int(enemy.get_attack()))
+            self.playerchar.set_gold(self.playerchar.get_gold() + int(enemy.get_attack()))  # gold drop
         self.check_drop(enemies)  # checking for item drop
 
     def check_drop(self, enemies):
@@ -216,7 +216,7 @@ class Game:
         for enemy in enemies:
             enemy_score = enemy.get_maxhp() + enemy.get_attack()
             if enemy_score > 200:
-                drop = rare_drop(0.5)
+                drop = rare_drop(0.8)
                 if drop:
                     self.item_drop.append(drop)
             elif enemy_score > 100:
@@ -224,7 +224,7 @@ class Game:
                 if drop:
                     self.item_drop.append(drop)
             elif enemy_score > 50:
-                drop = common_drop(0.5)
+                drop = common_drop(0.6)
                 if drop:
                     self.item_drop.append(drop)
             else:
@@ -247,7 +247,7 @@ class Game:
         if message not in ['Y', 'N', None]:
             dispatcher.send_message('Please input correct command', self._chat_id, self._player_id)
             dispatcher.send_message(DialogMessage('equip_item').get_message(), self._chat_id, self._player_id)
-        elif message is None:  # dirty hack
+        elif message is None:
             self.item = self.item_drop[0]  # checking out first available item
             dispatcher.send_message(DialogMessage('found_item_I', self.item).get_message() + "\n" + self.item.get_stats(), self._chat_id, self._player_id)
             if self.playerchar.get_inventory()[self.item.get_type()]:
@@ -257,7 +257,7 @@ class Game:
             dispatcher.send_message(DialogMessage('equip_item').get_message(), self._chat_id, self._player_id)
             self.item_drop.pop(0)  # deleting first available item
         else:
-            if message == 'Y':
+            if message == 'Y':  # adds item to playerchar inventory
                 self.playerchar.add_item(self.item)
                 self.item = None
                 self.send_inventory(self.playerchar)
@@ -273,13 +273,11 @@ class Game:
             dispatcher.send_message(DialogMessage('base').get_message(), self._chat_id, self._player_id)
             self.set_state('Base')
 
-
-# TODO mp -> mf for skills
-# TODO skills: Mage Fireball
-# TODO skills: Rogue Confusion
+# TODO: shop and gold drop
 # TODO enemies: Dark Shadow
+# TODO playerclass: Druid
 # TODO: initiative
-# TODO: skills as classes
+
 
 def main():
     global dispatcher
@@ -315,9 +313,6 @@ def main():
                             player_game.battle_choice(content)
                         elif game_state == 'Item Choice':
                             player_game.item_choice(content)
-                        # dispatcher.send_message(game_state, chat_id, player_id)
-                    # if goes here
-                    # player_game.cont(Message(msg).get_content())
                 else:
                     dispatcher.send_message('Type /start to enter the game', chat_id, player_id)
 

@@ -150,13 +150,13 @@ class CommonItem(Item):
 
 class RareItem(Item):
     def __init__(self, lvl):
-        player_lvl_bonus = random.randint(0, lvl+5)
+        player_lvl_bonus = random.randint(0, lvl+3)
         #                     ATTACK || HP || MP || DEFENSE
-        self._item_dict = {'Armour': (0, 20, 4, 10 + player_lvl_bonus),
-                           'Weapon': (10 + player_lvl_bonus, 0, 4, 0),
-                           'Helm': (0, 10, 4, 5),
+        self._item_dict = {'Armour': (0, 40, 10, 15 + player_lvl_bonus),
+                           'Weapon': (15 + player_lvl_bonus, 0, 10, 0),
+                           'Helm': (0, 10, 10, 5),
                            'Boots': (0, 20, 4, 4),
-                           'Ring': (10, 30, 10, 0)
+                           'Ring': (10, 20, 20, 0)
                            }
         self._affixlist = ['of Damage', 'of Vitality', 'of Magic', 'of Defence', 'of Random']
         self._type = random.choice(list(self._item_dict))

@@ -377,10 +377,6 @@ class Mage(Character):
         super().__init__()
         self._cls = 'Mage'
         self._es = self.get_es()
-        # fireball = dict(NAME='Fireball',
-        #                 DMG=self.get_mp() * 2,
-        #                 CD=0,
-        #                 CD_TIMER=5)
         self.add_skill(Fireball(self))
         self._passives['Energy Shield'] = "This passive allows Mage to absorb some of incoming damage.\n" \
                                           "ES scales with MP and lvl"
@@ -677,15 +673,5 @@ class Fireball(Skill):
         Returns spell's damage
         """
         return self._owner.get_mp() * 1.5
-
-
-
-
-# mage = Mage()
-# mage.set_mp(15)
-# print(mage.get_skills()[0].get_damage())
-# mage.set_mp(20)
-# print(mage.get_skills()[0].get_damage())
-# #{k: bigdict[k] for k in ('l', 'm', 'n')}
 
 
