@@ -21,7 +21,6 @@ post==1.0.2
 public==1.0.3
 pycparser==2.18
 PyInstaller==3.3.1
-pypiwin32==223
 PySocks==1.6.8
 python-dateutil==1.5
 python-telegram-bot==11.1.0
