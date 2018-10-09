@@ -24,7 +24,6 @@ PyInstaller==3.3.1
 PySocks==1.6.8
 python-dateutil==1.5
 python-telegram-bot==11.1.0
-pywin32==223
 query-string==1.0.2
 request==1.0.2
 requests==2.19.1
