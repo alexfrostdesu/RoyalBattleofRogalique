@@ -1,4 +1,4 @@
-from events import DialogMessage
+from events import DialogMessage, StatusMessage
 from item import *
 import random
 import math
@@ -192,7 +192,7 @@ class Character:
         if self._exp >= self.get_exp_to_next_lvl():
             self._lvl += 1
             self.lvlup()
-            return DialogMessage('lvlup_CA', self, self.get_lvl()).get_message()
+            return DialogMessage('lvlup_CA', self, self.get_lvl()).get_message() + self.lvlup()
 
     def lvlup(self):
         """
@@ -203,6 +203,7 @@ class Character:
         self._mp += 1
         self._attack += 1
         self._exp = 0
+        return StatusMessage(self).stats_message()
 
 #   Items and inventory #
 
