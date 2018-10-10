@@ -38,7 +38,7 @@ class DialogMessage:
                 broke_es_dmg_hp_CAT=f"*{self._character}* broke *{self._target}*'s Energy Shield, while also dealing *{self._amount}* HP damage!",
                 evaded_CA=f"{self._character} evaded {self._amount} damage!",
                 crit="Critical hit!",
-                lvlup_CA=f"{self._character} got a level up! Your level is now {self._amount}",
+                lvlup_CA=f"*{self._character}* got a level up! Your level is now {self._amount}\n",
                 healed_CA=f"{self._character} was healed for {self._amount} HP",
                 won_C=f"{self._character} has won the battle!",
                 lost_C=f"{self._character} has lost the battle!",
