@@ -191,7 +191,6 @@ class Character:
         self._exp += exp
         if self._exp >= self.get_exp_to_next_lvl():
             self._lvl += 1
-            self.lvlup()
             return DialogMessage('lvlup_CA', self, self.get_lvl()).get_message() + self.lvlup()
 
     def lvlup(self):
