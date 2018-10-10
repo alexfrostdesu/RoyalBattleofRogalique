@@ -493,7 +493,7 @@ class Rogue(Character):
     def __init__(self):
         super().__init__()
         self._cls = 'Rogue'
-        self._evade_chance = self._evade_chance + 0.01 * self.get_mp()
+        self._evade_chance = self._evade_chance + 0.001 * self.get_mp()
         self._passives['Evasion'] = "This passive allows Rogue to evade some of incoming damage.\n" \
                                     "EV scales with MP"
         self._passives['Critical Strike'] = "This passive allows Rogue to double the damage some of his attacks.\n" \
@@ -505,7 +505,7 @@ class Rogue(Character):
         """
         Returns character's evade chance
         """
-        return self._evade_chance + 0.01 * self.get_mp()
+        return self._evade_chance + 0.001 * self.get_mp()
 
     def set_evasion(self, ev):
         """
@@ -525,7 +525,7 @@ class Rogue(Character):
         """
         Returns character's evade chance
         """
-        return self._crit_chance + 0.01 * self.get_mp()
+        return self._crit_chance + 0.001 * self.get_mp()
 
     def set_crit_chance(self, chance):
         """
@@ -546,10 +546,10 @@ class Rogue(Character):
         Takes damage from other character
         Prints message about that attack
         """
-        if not self.get_dodge():
-            return super().take_damage_from(damage, other)
-        else:
+        if self.get_dodge():
             return DialogMessage('evaded_CA', self, damage).get_message() + "\n"
+        else:
+            return super().take_damage_from(damage, other)
 
     def attack(self, other):
         """
