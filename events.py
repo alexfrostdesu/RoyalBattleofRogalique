@@ -73,9 +73,9 @@ class StatusMessage:
         if self._stats.get('ES'):
             msg += f"`ES      |  {self._stats['ES']:1.0f}`\n"
         if self._stats.get('EV_CHANCE'):
-            msg += f"`EV      |  {self._stats['EV_CHANCE'] * 100:1.0f}%`\n"
+            msg += f"`EV      |  {self._stats['EV_CHANCE'] * 100:0.1f}%`\n"
         if self._stats.get('CRIT_CHANCE'):
-            msg += f"`Crit    |  {self._stats['CRIT_CHANCE'] * 100:1.0f}%`\n"
+            msg += f"`Crit    |  {self._stats['CRIT_CHANCE'] * 100:0.1f}%`\n"
         if self._stats.get('PASSIVES'):
             msg += f"Passive skills:\n"
             for passive in self._stats['PASSIVES']:
