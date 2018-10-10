@@ -689,5 +689,3 @@ class Fireball(Skill):
         Returns spell's damage
         """
         return self._owner.get_mp() * 1.5
-
-
