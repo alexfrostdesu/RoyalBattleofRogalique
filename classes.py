@@ -191,7 +191,10 @@ class Character:
         self._exp += exp
         if self._exp >= self.get_exp_to_next_lvl():
             self._lvl += 1
-            return DialogMessage('lvlup_CA', self, self.get_lvl()).get_message() + self.lvlup()
+            lvlup = DialogMessage('lvlup_CA', self, self.get_lvl()).get_message()
+            self.lvlup()
+            lvlup += StatusMessage(self).stats_message()
+            return lvlup
 
     def lvlup(self):
         """
@@ -202,7 +205,6 @@ class Character:
         self._mp += 1
         self._attack += 1
         self._exp = 0
-        return StatusMessage(self).stats_message()
 
 #   Items and inventory #
 
