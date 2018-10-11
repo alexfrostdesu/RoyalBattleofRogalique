@@ -3,8 +3,6 @@ from events import DialogMessage, StatusMessage
 from bot_handler import BotHandler, Message
 import random, os, traceback
 
-
-
 TOKEN = os.environ["TOKEN"]
 
 
@@ -71,7 +69,7 @@ class Game:
         Adventure starts from here
         Inventory, status, shop
         """
-        if message not in ['Y', 'S', 'I']:  # standard check for right input
+        if message not in ['Y', 'S', 'I', 'B']:  # standard check for right input
             dispatcher.send_message('Please input correct command', self._chat_id, self._player_id)
             dispatcher.send_message(DialogMessage('base').get_message(), self._chat_id, self._player_id)
         else:
@@ -84,6 +82,46 @@ class Game:
             elif message == 'Y':
                 self.battle_choice()
                 self.set_state('Battle Choice')
+            elif message == 'B':
+                dispatcher.send_message(StatusMessage(self.playerchar).shop_message(), self._chat_id, self._player_id)
+                self.set_state('Shop')
+
+    def shop(self, message=None):
+        """
+        Shop part
+        """
+        if message not in ['HP', 'A', 'MP', 'E']:  # standard check for right input
+            dispatcher.send_message('Please input correct command', self._chat_id, self._player_id)
+            dispatcher.send_message(StatusMessage(self.playerchar).shop_message(), self._chat_id, self._player_id)
+        else:
+            if message == 'HP':
+                hp = int(self.playerchar.get_maxhp() - self.playerchar.get_current_hp())
+                if self.playerchar.get_gold() >= hp:
+                    self.playerchar.set_gold(self.playerchar.get_gold() - hp)
+                    self.playerchar.set_hp(self.playerchar.get_maxhp())
+                    dispatcher.send_message('HP restored', self._chat_id, self._player_id)
+                    self.send_stats(self.playerchar)
+                else:
+                    dispatcher.send_message('Not enough gold', self._chat_id, self._player_id)
+            if message == 'A':
+                if self.playerchar.get_gold() >= 1000:
+                    self.playerchar.set_gold(self.playerchar.get_gold() - 1000)
+                    self.playerchar.set_attack(self.playerchar.get_attack() + 10)
+                    dispatcher.send_message('Attack Boosted', self._chat_id, self._player_id)
+                    self.send_stats(self.playerchar)
+                else:
+                    dispatcher.send_message('Not enough gold', self._chat_id, self._player_id)
+            if message == 'MP':
+                if self.playerchar.get_gold() >= 1000:
+                    self.playerchar.set_gold(self.playerchar.get_gold() - 1000)
+                    self.playerchar.set_mp(self.playerchar.get_mp() + 10)
+                    dispatcher.send_message('MP Boosted', self._chat_id, self._player_id)
+                    self.send_stats(self.playerchar)
+                else:
+                    dispatcher.send_message('Not enough gold', self._chat_id, self._player_id)
+            if message == 'E':
+                self.set_state('Base')
+                dispatcher.send_message(DialogMessage('base').get_message(), self._chat_id, self._player_id)
 
     def battle_choice(self, message=None):
         """
@@ -113,30 +151,21 @@ class Game:
         Enemy spawn rules
         Returns list of enemies
         """
-        if lvl < 4:
-            enemy_list = [Monster(lvl)]
-        if 4 <= lvl < 7:
-            roll = random.randint(1, 6)
-            if roll % 3 == 0:
-                enemy_list = [GreaterMonster(lvl)]
-            else:
-                enemy_list = [Monster(lvl)]
-        if 7 <= lvl < 10:
-            roll = random.randint(1, 6)
-            if roll % 2 == 0:
-                enemy_list = [GreaterMonster(lvl)]
-            elif roll % 3 == 0:
-                enemy_list = [GreaterMonster(lvl), Monster(lvl)]
-            else:
-                enemy_list = [Monster(lvl)]
-        if lvl >= 10:
-            roll = random.randint(1, 6)
-            if roll % 6 == 0:
-                enemy_list = [GreaterMonster(lvl), GreaterMonster(lvl)]
-            if roll % 3 == 0:
-                enemy_list = [GreaterMonster(lvl), Monster(lvl)]
-            else:
-                enemy_list = [Monster(lvl), Monster(lvl)]
+        enemy_list = []
+        if lvl <= 10:
+            enemy_list.append(Monster(lvl))
+            for lvl in range(1, lvl, 4):
+                roll = random.randint(1, 6)
+                if roll % 6 == 0:
+                    enemy_list.append(GreaterMonster(lvl))
+                elif roll % 2 == 0:
+                    enemy_list.append(Monster(lvl))
+        if 10 < lvl:
+            enemy_list.append(GreaterMonster(lvl))
+            for i in range(0, lvl // 10):
+                roll = random.randint(1, 6)
+                if roll % 6 == 0 and len(enemy_list) < 4:
+                    enemy_list.append(GreaterMonster(lvl))
         return enemy_list
 
     def battle(self):
@@ -233,7 +262,19 @@ class Game:
                 if drop:
                     self.item_drop.append(drop)
 
-        if all(item is None for item in self.item_drop):
+        for item in self.item_drop:
+            if item:
+                playeritem = self.playerchar.get_inventory()[item.get_type()]
+                if playeritem:
+                    if item.get_bonus_attack() - playeritem.get_bonus_attack() <= 0 and \
+                       item.get_bonus_hp() - playeritem.get_bonus_hp() <= 0 and \
+                       item.get_bonus_mp() - playeritem.get_bonus_mp() <= 0 and \
+                       item.get_bonus_defence() - playeritem.get_bonus_defence() <= 0:
+                        self.item_drop.remove(item)
+            else:
+                self.item_drop.remove(item)
+
+        if self.item_drop == []:
             dispatcher.send_message(DialogMessage('base').get_message(), self._chat_id, self._player_id)
             self.set_state('Base')
         else:
@@ -246,7 +287,7 @@ class Game:
         None is a dirty hack and I am not proud
         """
         # TODO: Rework this None stuff
-        if message not in ['Y', 'N', None]:
+        if message not in ['E', 'N', None]:
             dispatcher.send_message('Please input correct command', self._chat_id, self._player_id)
             dispatcher.send_message(DialogMessage('equip_item').get_message(), self._chat_id, self._player_id)
         elif message is None:
@@ -259,7 +300,7 @@ class Game:
             dispatcher.send_message(DialogMessage('equip_item').get_message(), self._chat_id, self._player_id)
             self.item_drop.pop(0)  # deleting first available item
         else:
-            if message == 'Y':  # adds item to playerchar inventory
+            if message == 'E':  # adds item to playerchar inventory
                 self.playerchar.add_item(self.item)
                 self.item = None
                 self.send_inventory(self.playerchar)
@@ -275,9 +316,8 @@ class Game:
             dispatcher.send_message(DialogMessage('base').get_message(), self._chat_id, self._player_id)
             self.set_state('Base')
 
-# TODO: Y - equip на E - equip
+
 # TODO: shop and gold drop
-# TODO: items worse all stats destroy
 # TODO: logs
 # TODO: pseudorandom
 # TODO: rebalance exp and enemies strength
@@ -323,6 +363,8 @@ def main():
                                 player_game.battle_choice(content)
                             elif game_state == 'Item Choice':
                                 player_game.item_choice(content)
+                            elif game_state == 'Shop':
+                                player_game.shop(content)
                     else:
                         dispatcher.send_message('Type /start to enter the game', chat_id, player_id)
         except:
