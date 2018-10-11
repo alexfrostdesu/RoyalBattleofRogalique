@@ -12,6 +12,10 @@ class Character:
     _lvl = 1
     _gold = 0
     _character = True
+    _hp_item_bonus = 0
+    _mp_item_bonus = 0
+    _attack_item_bonus = 0
+    _armour_item_bonus = 0
 
     def __init__(self):
         self._cls = 'Character'
@@ -19,7 +23,7 @@ class Character:
         self._inventory = {'Armour': None, 'Weapon': None, 'Helm': None, 'Boots': None, 'Ring': None}
         self._skills = []
         self._passives = {}
-        self.recount_item_bonus()
+        self.recalculate_item_bonus()
         self._hp = self._maxhp = self.get_maxhp()
 
 #   Class getters and setters #
@@ -67,9 +71,19 @@ class Character:
 
     def get_hp_modifier(self):
         """
-        Returns character's attack modifier
+        Returns character's hp modifier
         """
         return self._hp_item_bonus
+
+    def set_hp_item_bonus(self, hp_bonus):
+        """
+        Sets character's hp modifier
+        """
+        self._hp_item_bonus = hp_bonus
+        # if charater have max hp and unequips item with bonus hp,
+        # current hp is recalclated
+        if self.get_current_hp() > self.get_maxhp():
+            self.set_hp(self.get_maxhp())
 
 #   MP getters and setters #
 
@@ -191,8 +205,10 @@ class Character:
         self._exp += exp
         if self._exp >= self.get_exp_to_next_lvl():
             self._lvl += 1
+            lvlup = DialogMessage('lvlup_CA', self, self.get_lvl()).get_message()
             self.lvlup()
-            return DialogMessage('lvlup_CA', self, self.get_lvl()).get_message() + self.lvlup()
+            lvlup += StatusMessage(self).stats_message()
+            return lvlup
 
     def lvlup(self):
         """
@@ -203,7 +219,6 @@ class Character:
         self._mp += 1
         self._attack += 1
         self._exp = 0
-        return StatusMessage(self).stats_message()
 
 #   Items and inventory #
 
@@ -215,7 +230,7 @@ class Character:
             pass
         else:
             self._inventory[item.get_type()] = item
-            self.recount_item_bonus()
+            self.recalculate_item_bonus()
 
     def get_inventory(self):
         """
@@ -223,9 +238,9 @@ class Character:
         """
         return self._inventory
 
-    def recount_item_bonus(self):
+    def recalculate_item_bonus(self):
         """
-        Recounts all item bonuses
+        Recalculates all item bonuses
         """
         self._hp_item_bonus = 0
         self._mp_item_bonus = 0
@@ -235,7 +250,7 @@ class Character:
             slot = list(self._inventory)[i]
             item = self._inventory[slot]
             if item is not None:
-                self._hp_item_bonus += item.get_bonus_hp()
+                self.set_hp_item_bonus(self.get_hp_modifier() + item.get_bonus_hp())
                 self._mp_item_bonus += item.get_bonus_mp()
                 self._attack_item_bonus += item.get_bonus_attack()
                 self._armour_item_bonus += item.get_bonus_defence()
