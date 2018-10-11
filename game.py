@@ -4,6 +4,8 @@ from bot_handler import BotHandler, Message
 import random
 import os
 
+
+
 TOKEN = os.environ["TOKEN"]
 
 
@@ -273,9 +275,15 @@ class Game:
             dispatcher.send_message(DialogMessage('base').get_message(), self._chat_id, self._player_id)
             self.set_state('Base')
 
+# TODO: Y - equip на E - equip
 # TODO: shop and gold drop
+# TODO: items worse all stats destroy
+# TODO: logs
+# TODO: pseudorandom
+# TODO: rebalance exp and enemies strength
 # TODO enemies: Dark Shadow
 # TODO playerclass: Druid
+# TODO: item sets
 # TODO: initiative
 
 
