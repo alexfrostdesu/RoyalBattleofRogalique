@@ -64,8 +64,10 @@ class Character:
         """
         Takes new value for character's hp and sets it
         """
-        if hp <= self.get_maxhp():
+        if 0 < hp <= self.get_maxhp():
             self._hp = hp
+        elif hp < 0:
+            self._hp = 1
         else:
             self._hp = self.get_maxhp()
 
@@ -158,7 +160,7 @@ class Character:
         """
         Returns character's defence modifier
         """
-        return 1 - (math.log10(self.get_armour() + 1) / 3)
+        return 1 / math.sqrt(self.get_armour()/50 + 1)
 
 #   EXP getters and setters #
 
@@ -180,7 +182,7 @@ class Character:
         """
         Returns character's exp to the next lvl
         """
-        return 100 * math.sqrt(self._lvl)
+        return 100 * math.sqrt(self._lvl * 2)
 
 #   LVL getters and setters #
 
@@ -385,7 +387,7 @@ class Character:
 
 
 class Mage(Character):
-    _hp = 85
+    _maxhp = 85
     _mp = 10
     _attack = 8
 
@@ -403,7 +405,7 @@ class Mage(Character):
         """
         Returns character's es
         """
-        return self._mp * (self.get_lvl() / 2)
+        return self._mp * math.sqrt(self.get_lvl())
 
     def _set_es(self, es):
         """
@@ -451,13 +453,12 @@ class Mage(Character):
 
 
 class Warrior(Character):
-    _hp = 100
     hp_mult = 1.1
 
     def __init__(self):
         super().__init__()
         self._cls = 'Warrior'
-        self._maxhp = self._hp = self.get_maxhp()
+        self._hp = self.get_maxhp()
         self._passives['Warrior Blood'] = "This passive adds Warrior additional defence for every missing HP.\n"
         self._passives['Great Health'] = "This passive adds additional defence for Warrior.\n"
 
@@ -481,7 +482,7 @@ class Warrior(Character):
         """
         Returns warrior's passive defence bonus
         """
-        return math.log10(self.get_maxhp() - self.get_current_hp() + 1) / 10
+        return math.exp(self.get_current_hp()/self.get_maxhp())/math.e
 
 #   Class specific methods modifications #
 
@@ -489,21 +490,21 @@ class Warrior(Character):
         """
         Returns character's defence modifier
         """
-        return 1 - (math.log10(self.get_armour() + 1) / 3) - self.get_passive_defence_bonus()
+        return 1 / (math.sqrt(self.get_armour()/50 + 1)) * self.get_passive_defence_bonus()
 
     def get_stats(self):
         """
         Returns character's stats in a dictionary
         """
         stats = super().get_stats()
-        stats['DEF_BONUS'] = round(self.get_passive_defence_bonus(), 2)
+        stats['DEF_BONUS'] = self.get_passive_defence_bonus()
         stats['HP_BONUS'] = self.hp_mult
         return stats
 
 
 class Rogue(Character):
-    _crit_chance = 0.2
-    _evade_chance = 0.2
+    _crit_chance = 0.15
+    _evade_chance = 0.15
     _attack = 15
 
     def __init__(self):
@@ -607,7 +608,7 @@ class Monster(Character):
         self._maxhp = (random.randint(21, 40) * self._lvl_mult)
         self._hp = self.get_maxhp()
         self._mp = (random.randint(1, 1) * self._lvl_mult)
-        self._attack = (random.randint(1, 15) * self._lvl_mult)
+        self._attack = (random.randint(5, 15) * self._lvl_mult)
 
 
 class GreaterMonster(Monster):
@@ -615,6 +616,7 @@ class GreaterMonster(Monster):
         lvl_mult *= 2 * math.log10(lvl_mult)
         super().__init__(lvl_mult)
         self._cls = 'Greater Monster'
+        self.add_item(RareItem(int(lvl_mult)))
         self.add_item(RareItem(int(lvl_mult)))
         self.add_item(RareItem(int(lvl_mult)))
         self.add_item(RareItem(int(lvl_mult)))
@@ -688,4 +690,8 @@ class Fireball(Skill):
         """
         Returns spell's damage
         """
-        return self._owner.get_mp() * 1.5
+        return self._owner.get_mp()
+
+
+
+
