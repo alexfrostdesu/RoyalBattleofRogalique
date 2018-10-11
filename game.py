@@ -1,8 +1,7 @@
 from classes import *
 from events import DialogMessage, StatusMessage
 from bot_handler import BotHandler, Message
-import random
-import os
+import random, os, traceback
 
 TOKEN = os.environ["TOKEN"]
 
@@ -244,6 +243,7 @@ class Game:
         Player battle_choice of equipping the item
         None is a dirty hack and I am not proud
         """
+        # TODO: Rework this None stuff
         if message not in ['Y', 'N', None]:
             dispatcher.send_message('Please input correct command', self._chat_id, self._player_id)
             dispatcher.send_message(DialogMessage('equip_item').get_message(), self._chat_id, self._player_id)
@@ -285,36 +285,43 @@ def main():
     dispatcher = BotHandler(TOKEN)
     user_list = dict()
     while True:
-        update = dispatcher.get_update()
-        for msg in update:
-            new_message = Message(msg['message'])
-            if new_message.get_type() != 'text':
-                pass
-            else:
-                player_id = new_message.get_user_id()
-                chat_id = new_message.get_chat_id()
-                content = new_message.get_content()
-                if player_id['id'] not in user_list.keys() and content == '/start':
-                    dispatcher.send_message('Ready Player One', chat_id, player_id)
-                    player_game = Game(chat_id, player_id)
-                    user_list[player_id['id']] = player_game
-                elif player_id['id'] in user_list:
-                    if new_message.get_content() == '/restart':
-                        user_list.pop(player_id['id'])
-                        dispatcher.send_message('Game reset', chat_id, player_id)
-                    else:
-                        player_game = user_list[player_id['id']]
-                        game_state = player_game.check_state()
-                        if game_state == 'Game Start':
-                            player_game.game_start(content)
-                        elif game_state == 'Base':
-                            player_game.base(content)
-                        elif game_state == 'Battle Choice':
-                            player_game.battle_choice(content)
-                        elif game_state == 'Item Choice':
-                            player_game.item_choice(content)
+        try:
+            # TODO: rework this method
+            update = dispatcher.get_update()
+            for msg in update:
+                new_message = Message(msg['message'])
+                if new_message.get_type() != 'text':
+                    pass
                 else:
-                    dispatcher.send_message('Type /start to enter the game', chat_id, player_id)
+                    player_id = new_message.get_user_id()
+                    chat_id = new_message.get_chat_id()
+                    content = new_message.get_content()
+                    if player_id['id'] not in user_list.keys() and content == '/start':
+                        dispatcher.send_message('Ready Player One', chat_id, player_id)
+                        player_game = Game(chat_id, player_id)
+                        user_list[player_id['id']] = player_game
+                    elif player_id['id'] in user_list:
+                        if new_message.get_content() == '/restart':
+                            user_list.pop(player_id['id'])
+                            dispatcher.send_message('Game reset', chat_id, player_id)
+                        else:
+                            player_game = user_list[player_id['id']]
+                            game_state = player_game.check_state()
+                            if game_state == 'Game Start':
+                                player_game.game_start(content)
+                            elif game_state == 'Base':
+                                player_game.base(content)
+                            elif game_state == 'Battle Choice':
+                                player_game.battle_choice(content)
+                            elif game_state == 'Item Choice':
+                                player_game.item_choice(content)
+                    else:
+                        dispatcher.send_message('Type /start to enter the game', chat_id, player_id)
+        except:
+            print("Some whit went wrong")
+            print("*"*50)
+            traceback.print_exc()
+            print("*"*50)
 
 
 if __name__ == '__main__':
