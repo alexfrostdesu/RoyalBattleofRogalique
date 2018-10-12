@@ -613,7 +613,7 @@ class Monster(Character):
 
 class GreaterMonster(Monster):
     def __init__(self, lvl_mult=1):
-        lvl_mult *= 2 * math.log10(lvl_mult)
+        lvl_mult *= math.sqrt(lvl_mult) / 10
         super().__init__(lvl_mult)
         self._cls = 'Greater Monster'
         self.add_item(RareItem(int(lvl_mult)))
