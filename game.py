@@ -345,19 +345,19 @@ def main():
                     chat_id = new_message.get_chat_id()
                     content = new_message.get_content()
                     if player_id['id'] not in user_list.keys() and content == '/start':
-                        print(f"Player: {player_id['id']}, Chat: {chat_id['id']}, Content: {content}")
+                        print(f"Player: {player_id}, Chat: {chat_id}, Content: {content}")
                         dispatcher.send_message('Ready Player One', chat_id, player_id)
                         player_game = Game(chat_id, player_id)
                         user_list[player_id['id']] = player_game
                     elif player_id['id'] in user_list:
                         if new_message.get_content() == '/restart':
-                            print(f"Player: {player_id['id']}, Chat: {chat_id['id']}, Content: {content}")
+                            print(f"Player: {player_id}, Chat: {chat_id}, Content: {content}")
                             user_list.pop(player_id['id'])
                             dispatcher.send_message('Game reset', chat_id, player_id)
                         else:
                             player_game = user_list[player_id['id']]
                             game_state = player_game.check_state()
-                            print(f"Player: {player_id['id']}, Chat: {chat_id['id']}, Content: {content}, Game State: {game_state}")
+                            print(f"Player: {player_id}, Chat: {chat_id}, Content: {content}, Game State: {game_state}")
                             if game_state == 'Game Start':
                                 player_game.game_start(content)
                             elif game_state == 'Base':
