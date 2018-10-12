@@ -12,6 +12,10 @@ class Character:
     _lvl = 1
     _gold = 0
     _character = True
+    _hp_item_bonus = 0
+    _mp_item_bonus = 0
+    _attack_item_bonus = 0
+    _armour_item_bonus = 0
 
     def __init__(self):
         self._cls = 'Character'
@@ -19,7 +23,7 @@ class Character:
         self._inventory = {'Armour': None, 'Weapon': None, 'Helm': None, 'Boots': None, 'Ring': None}
         self._skills = []
         self._passives = {}
-        self.recount_item_bonus()
+        self.recalculate_item_bonus()
         self._hp = self._maxhp = self.get_maxhp()
 
 #   Class getters and setters #
@@ -60,16 +64,28 @@ class Character:
         """
         Takes new value for character's hp and sets it
         """
-        if hp <= self.get_maxhp():
+        if 0 < hp <= self.get_maxhp():
             self._hp = hp
+        elif hp < 0:
+            self._hp = 1
         else:
             self._hp = self.get_maxhp()
 
     def get_hp_modifier(self):
         """
-        Returns character's attack modifier
+        Returns character's hp modifier
         """
         return self._hp_item_bonus
+
+    def set_hp_item_bonus(self, hp_bonus):
+        """
+        Sets character's hp modifier
+        """
+        self._hp_item_bonus = hp_bonus
+        # if charater have max hp and unequips item with bonus hp,
+        # current hp is recalclated
+        if self.get_current_hp() > self.get_maxhp():
+            self.set_hp(self.get_maxhp())
 
 #   MP getters and setters #
 
@@ -144,7 +160,7 @@ class Character:
         """
         Returns character's defence modifier
         """
-        return 1 - (math.log10(self.get_armour() + 1) / 3)
+        return 1 / math.sqrt(self.get_armour()/50 + 1)
 
 #   EXP getters and setters #
 
@@ -166,7 +182,7 @@ class Character:
         """
         Returns character's exp to the next lvl
         """
-        return 100 * math.sqrt(self._lvl)
+        return 100 * math.sqrt(self._lvl * 2)
 
 #   LVL getters and setters #
 
@@ -216,7 +232,7 @@ class Character:
             pass
         else:
             self._inventory[item.get_type()] = item
-            self.recount_item_bonus()
+            self.recalculate_item_bonus()
 
     def get_inventory(self):
         """
@@ -224,9 +240,9 @@ class Character:
         """
         return self._inventory
 
-    def recount_item_bonus(self):
+    def recalculate_item_bonus(self):
         """
-        Recounts all item bonuses
+        Recalculates all item bonuses
         """
         self._hp_item_bonus = 0
         self._mp_item_bonus = 0
@@ -236,7 +252,7 @@ class Character:
             slot = list(self._inventory)[i]
             item = self._inventory[slot]
             if item is not None:
-                self._hp_item_bonus += item.get_bonus_hp()
+                self.set_hp_item_bonus(self.get_hp_modifier() + item.get_bonus_hp())
                 self._mp_item_bonus += item.get_bonus_mp()
                 self._attack_item_bonus += item.get_bonus_attack()
                 self._armour_item_bonus += item.get_bonus_defence()
@@ -371,7 +387,7 @@ class Character:
 
 
 class Mage(Character):
-    _hp = 85
+    _maxhp = 85
     _mp = 10
     _attack = 8
 
@@ -389,7 +405,7 @@ class Mage(Character):
         """
         Returns character's es
         """
-        return self._mp * (self.get_lvl() / 2)
+        return self._mp * math.sqrt(self.get_lvl())
 
     def _set_es(self, es):
         """
@@ -437,13 +453,12 @@ class Mage(Character):
 
 
 class Warrior(Character):
-    _hp = 100
     hp_mult = 1.1
 
     def __init__(self):
         super().__init__()
         self._cls = 'Warrior'
-        self._maxhp = self._hp = self.get_maxhp()
+        self._hp = self.get_maxhp()
         self._passives['Warrior Blood'] = "This passive adds Warrior additional defence for every missing HP.\n"
         self._passives['Great Health'] = "This passive adds additional defence for Warrior.\n"
 
@@ -467,7 +482,7 @@ class Warrior(Character):
         """
         Returns warrior's passive defence bonus
         """
-        return math.log10(self.get_maxhp() - self.get_current_hp() + 1) / 10
+        return math.exp(self.get_current_hp()/self.get_maxhp())/math.e
 
 #   Class specific methods modifications #
 
@@ -475,21 +490,21 @@ class Warrior(Character):
         """
         Returns character's defence modifier
         """
-        return 1 - (math.log10(self.get_armour() + 1) / 3) - self.get_passive_defence_bonus()
+        return 1 / (math.sqrt(self.get_armour()/50 + 1)) * self.get_passive_defence_bonus()
 
     def get_stats(self):
         """
         Returns character's stats in a dictionary
         """
         stats = super().get_stats()
-        stats['DEF_BONUS'] = round(self.get_passive_defence_bonus(), 2)
+        stats['DEF_BONUS'] = self.get_passive_defence_bonus()
         stats['HP_BONUS'] = self.hp_mult
         return stats
 
 
 class Rogue(Character):
-    _crit_chance = 0.2
-    _evade_chance = 0.2
+    _crit_chance = 0.15
+    _evade_chance = 0.15
     _attack = 15
 
     def __init__(self):
@@ -593,7 +608,7 @@ class Monster(Character):
         self._maxhp = (random.randint(21, 40) * self._lvl_mult)
         self._hp = self.get_maxhp()
         self._mp = (random.randint(1, 1) * self._lvl_mult)
-        self._attack = (random.randint(1, 15) * self._lvl_mult)
+        self._attack = (random.randint(5, 15) * self._lvl_mult)
 
 
 class GreaterMonster(Monster):
@@ -601,6 +616,7 @@ class GreaterMonster(Monster):
         lvl_mult *= 2 * math.log10(lvl_mult)
         super().__init__(lvl_mult)
         self._cls = 'Greater Monster'
+        self.add_item(RareItem(int(lvl_mult)))
         self.add_item(RareItem(int(lvl_mult)))
         self.add_item(RareItem(int(lvl_mult)))
         self.add_item(RareItem(int(lvl_mult)))
@@ -674,6 +690,8 @@ class Fireball(Skill):
         """
         Returns spell's damage
         """
-        return self._owner.get_mp() * 1.5
+        return self._owner.get_mp()
+
+
 
 

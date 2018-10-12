@@ -150,7 +150,7 @@ class CommonItem(Item):
 
 class RareItem(Item):
     def __init__(self, lvl):
-        player_lvl_bonus = random.randint(0, lvl+3)
+        player_lvl_bonus = random.randint(0, lvl+5)
         #                     ATTACK || HP || MP || DEFENSE
         self._item_dict = {'Armour': (0, 40, 10, 15 + player_lvl_bonus),
                            'Weapon': (15 + player_lvl_bonus, 0, 10, 0),
@@ -164,7 +164,7 @@ class RareItem(Item):
         self._rarity = 'Rare'
         item_stats = list([random.randint(0, i) for i in self._item_dict[self._type]])
         if self._item_affix != 'of Random':
-            item_stats[self._affixlist.index(self._item_affix)] += player_lvl_bonus
+            item_stats[self._affixlist.index(self._item_affix)] += random.randint(0, lvl+5)
         else:
-            item_stats = (random.randint(0, 10), random.randint(0, 30), random.randint(0, 10), random.randint(0, 10))
+            item_stats = (random.randint(0, lvl+5), random.randint(0, lvl+5), random.randint(0, lvl+5), random.randint(0, lvl+5))
         super().__init__(*item_stats)

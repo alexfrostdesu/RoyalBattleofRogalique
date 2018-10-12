@@ -23,11 +23,11 @@ class DialogMessage:
         messages = dict(
             stats="Your character's stats",
             start_game="*Select your character*:\n" + "```\nMage \nWarrior \nRogue```",
-            base="Do you want to go and kill some monsters? *(Y/I/S)*\n" + "```\nY - Go and find some monsters \nI - Show inventory \nS - Show stats```",
+            base="Do you want to go and kill some monsters? *(Y/I/S)*\n" + "```\nY - Go and find some monsters \nI - Show inventory \nS - Show stats \nB - Go to shop```",
             attack_enemy="Do you want to attack? *(Y/N)*\n" + "```\nY - Attack the enemy \nN - Retreat to base```",
             end_game="Your adventure ends here.\nType /start to start new game.",
             dead="Your character is dead.",
-            equip_item="Would you like to equip item? *(Y/N)*\n" + "```\nY - Equip Item \nN - Discard Item```")
+            equip_item="Would you like to equip item? *(Y/N)*\n" + "```\nE - Equip Item \nN - Discard Item```")
         if self._character != '' or self._item != '':
             action_messages = dict(
                 attack_CAT=f"*{self._character}* attacked *{self._target}* for *{self._amount} HP* damage!",
@@ -92,4 +92,16 @@ class StatusMessage:
                 msg += f"`{item}".ljust(9) + f"| {inventory[item].get_full_name()}`\n"
             else:
                 msg += f"`{item}".ljust(9) + "| No Item`\n"
+        return msg
+
+    def shop_message(self):
+        player_hp = self._character.get_current_hp()
+        player_max_hp = self._character.get_maxhp()
+        msg = "*Welcome to the shop!*\n" \
+              f"Current gold: {self._character.get_gold()} \n" \
+               "What would you like to buy?\n" \
+               f"*(HP)*`  HP refill:    {(player_max_hp - player_hp) * 2:1.0f} gold`\n" \
+                "*(A)*`   Attack boost: 1000 gold` \n" \
+                "*(MP)*`  MP boost:     1000 gold` \n" \
+                "Type *E* to exit shop"
         return msg
