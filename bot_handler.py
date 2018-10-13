@@ -47,6 +47,10 @@ class BotHandler:
         response = requests.post(self._url + "sendMessage", {'text': text, 'chat_id': chat_id, 'from': user_id, 'parse_mode': 'Markdown'})
         return response
 
+    def send_messages(self, messages):
+        for message in messages:
+            self.send_message(message.text, message.chat_id, message.player_id)
+
 
 class Message:
     def __init__(self, message):
