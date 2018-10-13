@@ -263,6 +263,7 @@ class Game:
                                             self.playerchar).get_message()
                 self.enqueue_message(
                     battle_log, self._chat_id, self._player_id)
+                print(battle_log)
                 self.set_state('Battle Won')
                 self.won_battle(self.enemies)
                 for skill in self.playerchar.get_skills():
@@ -275,8 +276,9 @@ class Game:
         After battle is won, hero gets his reward
         """
         for enemy in enemies:
-            self.enqueue_message(self.playerchar.add_exp(
-                enemy.get_maxhp()), self._chat_id, self._player_id)
+            is_lvlup = self.playerchar.add_exp(enemy.get_maxhp())
+            if is_lvlup:
+                self.enqueue_message(is_lvlup, self._chat_id, self._player_id)
             self.playerchar.set_gold(
                 self.playerchar.get_gold() + int(enemy.get_attack()))  # gold drop
         self.check_drop(enemies)  # checking for item drop
