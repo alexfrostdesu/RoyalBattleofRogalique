@@ -263,7 +263,6 @@ class Game:
                                             self.playerchar).get_message()
                 self.enqueue_message(
                     battle_log, self._chat_id, self._player_id)
-                print(battle_log)
                 self.set_state('Battle Won')
                 self.won_battle(self.enemies)
                 for skill in self.playerchar.get_skills():
@@ -466,7 +465,7 @@ def main():
     while True:
         update = dispatcher.get_update()
         replays = game_manager.generate_replays(update)
-        dispatcher.send_messages(replays)
+        dispatcher.send_messages_async(replays)
 
 
 if __name__ == '__main__':
