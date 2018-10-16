@@ -407,6 +407,24 @@ class GameManager():
     def __init__(self):
         self.user_list = dict()
 
+    def merge_messages(self, messages):
+        """
+        Takes a list of messages
+        Merges every subsequent message to one player, into bigger message
+        """
+        from itertools import groupby
+        result = []
+        separator = "\n\n"
+        for key, group in groupby(messages, lambda x: x.chat_id):
+            res = ""
+            for message in group:
+                if res:
+                    res += separator + message.text
+                else:
+                    res += message.text
+            result.append(OutMessage(res, key, key))
+        return result
+
     def generate_replays(self, update):
         try:
             messages_to_send = []
@@ -454,7 +472,7 @@ class GameManager():
                     else:
                         messages_to_send.append(OutMessage(
                             'Type /start to enter the game', chat_id, player_id))
-            return messages_to_send
+            return self.merge_messages(messages_to_send)
         except:
             print("Some went wrong")
             print("*"*50)
