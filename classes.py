@@ -11,6 +11,7 @@ class Character:
     _exp = 0
     _lvl = 1
     _gold = 0
+    _armour = 0
     _character = True
     _hp_item_bonus = 0
     _mp_item_bonus = 0
@@ -19,7 +20,6 @@ class Character:
 
     def __init__(self):
         self._cls = 'Character'
-        self._armour = 0
         self._inventory = {'Armour': None, 'Weapon': None, 'Helm': None, 'Boots': None, 'Ring': None}
         self._skills = []
         self._passives = {}
@@ -387,7 +387,7 @@ class Character:
 
 
 class Mage(Character):
-    _maxhp = 85
+    _maxhp = 90
     _mp = 10
     _attack = 8
 
@@ -405,7 +405,7 @@ class Mage(Character):
         """
         Returns character's es
         """
-        return self._mp * math.sqrt(self.get_lvl())
+        return self._mp * math.sqrt(self.get_lvl() * 2)
 
     def _set_es(self, es):
         """
@@ -505,7 +505,8 @@ class Warrior(Character):
 class Rogue(Character):
     _crit_chance = 0.15
     _evade_chance = 0.15
-    _attack = 15
+    _attack = 12
+    _maxhp = 90
 
     def __init__(self):
         super().__init__()
@@ -604,16 +605,17 @@ class Monster(Character):
     def __init__(self, lvl_mult=1):
         super().__init__()
         self._cls = 'Monster'
-        self._lvl_mult = lvl_mult / math.sqrt(lvl_mult * 2)
+        self._lvl_mult = lvl_mult * 1.5 / math.sqrt(lvl_mult * 2)
         self._maxhp = (random.randint(21, 40) * self._lvl_mult)
         self._hp = self.get_maxhp()
         self._mp = (random.randint(1, 1) * self._lvl_mult)
         self._attack = (random.randint(5, 15) * self._lvl_mult)
+        self._armour = 10 * random.uniform(1, 2)
 
 
 class GreaterMonster(Monster):
     def __init__(self, lvl_mult=1):
-        lvl_mult *= 2 * math.log10(lvl_mult)
+        lvl_mult *= 2
         super().__init__(lvl_mult)
         self._cls = 'Greater Monster'
         self.add_item(RareItem(int(lvl_mult)))
@@ -683,14 +685,14 @@ class Skill:
 class Fireball(Skill):
     def __init__(self, character):
         super().__init__(character)
-        self._cooldown = 5
+        self._cooldown = 4
         self._current_cd = 0
 
     def get_damage(self):
         """
         Returns spell's damage
         """
-        return self._owner.get_mp()
+        return self._owner.get_mp() * 1.5
 
 
 

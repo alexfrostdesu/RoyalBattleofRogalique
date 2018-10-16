@@ -94,7 +94,7 @@ class Game:
         """
         Shop part
         """
-        if message not in ['HP', 'A', 'MP', 'E']:  # standard check for right input
+        if message not in ['HP', 'A', 'MP', 'E', 'P']:  # standard check for right input
             dispatcher.send_message('Please input correct command', self._chat_id, self._player_id)
             dispatcher.send_message(StatusMessage(self.playerchar).shop_message(), self._chat_id, self._player_id)
         else:
