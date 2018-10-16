@@ -72,6 +72,10 @@ class Game:
         _inventory = StatusMessage(char).inventory_message()
         self.enqueue_message(_inventory, self._chat_id, self._player_id)
 
+    def roll(self, number):
+        roll = random.randint(1, 6)
+        return roll >= number
+
 #   Game start block #
 
     def game_start(self, message):
@@ -124,11 +128,9 @@ class Game:
         """
         Shop part
         """
-        if message not in ['HP', 'A', 'MP', 'E']:  # standard check for right input
-            self.enqueue_message(
-                'Please input correct command', self._chat_id, self._player_id)
-            self.enqueue_message(StatusMessage(
-                self.playerchar).shop_message(), self._chat_id, self._player_id)
+        if message not in ['HP', 'A', 'MP', 'E', 'P']:  # standard check for right input
+            self.enqueue_message('Please input correct command', self._chat_id, self._player_id)
+            self.enqueue_message(StatusMessage(self.playerchar).shop_message(), self._chat_id, self._player_id)
         else:
             if message == 'HP':
                 hp = int(self.playerchar.get_maxhp() -
@@ -140,15 +142,20 @@ class Game:
                         'HP restored', self._chat_id, self._player_id)
                     self.send_stats(self.playerchar)
                 else:
-                    self.enqueue_message(
-                        'Not enough gold', self._chat_id, self._player_id)
+                    elf.enqueue_message('Not enough gold', self._chat_id, self._player_id)
+            if message == 'P':
+                if self.playerchar.get_gold() >= 10:
+                    self.playerchar.set_gold(self.playerchar.get_gold() - 10)
+                    self.playerchar.set_hp(self.playerchar.get_current_hp() + 10)
+                    elf.enqueue_message('HP restored', self._chat_id, self._player_id)
+                    self.send_stats(self.playerchar)
+                else:
+                    elf.enqueue_message('Not enough gold', self._chat_id, self._player_id)
             if message == 'A':
                 if self.playerchar.get_gold() >= 1000:
                     self.playerchar.set_gold(self.playerchar.get_gold() - 1000)
-                    self.playerchar.set_attack(
-                        self.playerchar.get_attack() + 10)
-                    self.enqueue_message(
-                        'Attack Boosted', self._chat_id, self._player_id)
+                    self.playerchar.set_attack(self.playerchar._attack + 10)
+                    elf.enqueue_message('Attack Boosted', self._chat_id, self._player_id)
                     self.send_stats(self.playerchar)
                 else:
                     self.enqueue_message(
@@ -156,9 +163,7 @@ class Game:
             if message == 'MP':
                 if self.playerchar.get_gold() >= 1000:
                     self.playerchar.set_gold(self.playerchar.get_gold() - 1000)
-                    self.playerchar.set_mp(self.playerchar.get_mp() + 10)
-                    self.enqueue_message(
-                        'MP Boosted', self._chat_id, self._player_id)
+                    elf.enqueue_message('MP Boosted', self._chat_id, self._player_id)
                     self.send_stats(self.playerchar)
                 else:
                     self.enqueue_message(
@@ -193,31 +198,31 @@ class Game:
                 self.battle()
             elif message == 'N':
                 self.set_state('Base')
-                self.enqueue_message('Returning to base',
-                                     self._chat_id, self._player_id)
-                self.enqueue_message(DialogMessage(
-                    'base').get_message(), self._chat_id, self._player_id)
-
+                elf.enqueue_message(You've lost half of your gold, while running away", self._chat_id, self._player_id)
+                self.playerchar.set_gold(self.playerchar.get_gold()/2)
+                elf.enqueue_message(DialogMessage('base').get_message(), self._chat_id, self._player_id)
     def create_enemy_list(self, lvl):
         """
         Enemy spawn rules
         Returns list of enemies
         """
         enemy_list = []
-        if lvl <= 10:
-            enemy_list.append(Monster(lvl))
-            for lvl in range(1, lvl, 4):
-                roll = random.randint(1, 7)
-                if roll % 6 == 0:
+        monster = (5, 10, 20)
+        g_monster = (10, 20, 30)
+
+        for step in g_monster:
+            ind = g_monster.index(step)
+            if lvl >= step and len(enemy_list) < 3:
+                if self.roll(4 - ind):
                     enemy_list.append(GreaterMonster(lvl))
-                elif roll % 2 == 0:
+
+        for step in monster:
+            ind = monster.index(step)
+            if lvl >= step and len(enemy_list) < 3:
+                if self.roll(4 - ind):
                     enemy_list.append(Monster(lvl))
-        if 10 < lvl:
-            enemy_list.append(GreaterMonster(lvl))
-            for i in range(0, lvl // 10):
-                roll = random.randint(1, 7)
-                if roll % 6 == 0 and len(enemy_list) < 4:
-                    enemy_list.append(GreaterMonster(lvl))
+        if enemy_list == []:
+            enemy_list.append(Monster(lvl))
         return enemy_list
 
     def battle(self):
@@ -322,26 +327,25 @@ class Game:
             if enemy_score > 200:
                 rare_drop(0.8)
             elif enemy_score > 100:
-                rare_drop(0.3)
+                rare_drop(0.5)
             elif enemy_score > 50:
-                common_drop(0.6)
+                common_drop(1)
             else:
-                common_drop(0.3)
+                common_drop(0.5)
         for item in self.item_drop:
             if item:
                 playeritem = self.playerchar.get_inventory()[item.get_type()]
                 if playeritem:
                     if item.get_bonus_attack() - playeritem.get_bonus_attack() <= 0 and \
-                       item.get_bonus_hp() - playeritem.get_bonus_hp() <= 0 and \
-                       item.get_bonus_mp() - playeritem.get_bonus_mp() <= 0 and \
-                       item.get_bonus_defence() - playeritem.get_bonus_defence() <= 0:
+                            item.get_bonus_hp() - playeritem.get_bonus_hp() <= 0 and \
+                            item.get_bonus_mp() - playeritem.get_bonus_mp() <= 0 and \
+                            item.get_bonus_defence() - playeritem.get_bonus_defence() <= 0:
                         self.item_drop.remove(item)
             else:
                 self.item_drop.remove(item)
 
         if not self.item_drop:
-            self.enqueue_message(DialogMessage(
-                'base').get_message(), self._chat_id, self._player_id)
+            self.enqueue_message(DialogMessage('base').get_message(), self._chat_id, self._player_id)
             self.set_state('Base')
         else:
             self.set_state('Item Choice')
@@ -388,10 +392,7 @@ class Game:
                 self.set_state('Base')
 
 
-# TODO: shop and gold drop
-# TODO: logs
 # TODO: pseudorandom
-# TODO: rebalance exp and enemies strength
 # TODO enemies: Dark Shadow
 # TODO playerclass: Druid
 # TODO: item sets
