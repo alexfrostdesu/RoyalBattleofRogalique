@@ -100,7 +100,7 @@ class StatusMessage:
         msg = "*Welcome to the shop!*\n" \
               f"Current gold: {self._character.get_gold()} \n" \
                "What would you like to buy? *(HP/P/A/MP)*\n" \
-               f"`  HP refill:    {(player_max_hp - player_hp) * 2:1.0f} gold`\n" \
+               f"`  HP refill:    {player_max_hp - player_hp:1.0f} gold`\n" \
                 "`  Small Potion: 10 gold` \n" \
                 "`  Attack boost: 1000 gold` \n" \
                 "`  MP boost:     1000 gold` \n" \

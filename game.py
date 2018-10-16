@@ -165,19 +165,19 @@ class Game:
         Returns list of enemies
         """
         enemy_list = []
-        monster = (1, 5, 10, 20)
+        monster = (5, 10, 20)
         g_monster = (10, 20, 30)
 
         for step in g_monster:
             ind = g_monster.index(step)
             if lvl >= step and len(enemy_list) < 3:
-                if self.roll(2 + ind):
+                if self.roll(4 - ind):
                     enemy_list.append(GreaterMonster(lvl))
 
         for step in monster:
             ind = monster.index(step)
             if lvl >= step and len(enemy_list) < 3:
-                if self.roll(1 + ind):
+                if self.roll(4 - ind):
                     enemy_list.append(Monster(lvl))
 
         if enemy_list == []:
@@ -265,11 +265,11 @@ class Game:
             if enemy_score > 200:
                 rare_drop(0.8)
             elif enemy_score > 100:
-                rare_drop(0.3)
+                rare_drop(0.5)
             elif enemy_score > 50:
-                common_drop(0.6)
+                common_drop(1)
             else:
-                common_drop(0.3)
+                common_drop(0.5)
         for item in self.item_drop:
             if item:
                 playeritem = self.playerchar.get_inventory()[item.get_type()]

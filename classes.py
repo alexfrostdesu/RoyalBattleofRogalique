@@ -605,11 +605,11 @@ class Monster(Character):
     def __init__(self, lvl_mult=1):
         super().__init__()
         self._cls = 'Monster'
-        self._lvl_mult = lvl_mult * 1.5 / math.sqrt(lvl_mult * 2)
+        self._lvl_mult = lvl_mult * 2 / math.sqrt(lvl_mult * 4)
         self._maxhp = (random.randint(21, 40) * self._lvl_mult)
         self._hp = self.get_maxhp()
         self._mp = (random.randint(1, 1) * self._lvl_mult)
-        self._attack = (random.randint(5, 15) * self._lvl_mult)
+        self._attack = (random.randint(5, 10) * self._lvl_mult)
         self._armour = 10 * random.uniform(1, 2)
 
 
