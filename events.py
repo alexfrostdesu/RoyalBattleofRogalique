@@ -27,7 +27,7 @@ class DialogMessage:
             attack_enemy="Do you want to attack? *(Y/N)*\n" + "```\nY - Attack the enemy \nN - Retreat to base```",
             end_game="Your adventure ends here.\nType /start to start new game.",
             dead="Your character is dead.",
-            equip_item="Would you like to equip item? *(Y/N)*\n" + "```\nE - Equip Item \nN - Discard Item```")
+            equip_item="Would you like to equip item? *(E/N)*\n" + "```\nE - Equip Item \nN - Discard Item```")
         if self._character != '' or self._item != '':
             action_messages = dict(
                 attack_CAT=f"*{self._character}* attacked *{self._target}* for *{self._amount} HP* damage!",
@@ -99,9 +99,10 @@ class StatusMessage:
         player_max_hp = self._character.get_maxhp()
         msg = "*Welcome to the shop!*\n" \
               f"Current gold: {self._character.get_gold()} \n" \
-               "What would you like to buy?\n" \
-               f"*(HP)*`  HP refill:    {(player_max_hp - player_hp):1.0f} gold`\n" \
-                "*(A)*`   Attack boost: 1000 gold` \n" \
-                "*(MP)*`  MP boost:     1000 gold` \n" \
+               "What would you like to buy? *(HP/P/A/MP)*\n" \
+               f"`  HP refill:    {player_max_hp - player_hp:1.0f} gold`\n" \
+                "`  Small Potion: 10 gold` \n" \
+                "`  Attack boost: 1000 gold` \n" \
+                "`  MP boost:     1000 gold` \n" \
                 "Type *E* to exit shop"
         return msg
