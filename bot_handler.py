@@ -1,4 +1,4 @@
-import requests
+import requests, asyncio, aiohttp
 
 class BotHandler:
     def __init__(self, token):
@@ -46,6 +46,22 @@ class BotHandler:
         """
         response = requests.post(self._url + "sendMessage", {'text': text, 'chat_id': chat_id, 'from': user_id, 'parse_mode': 'Markdown'})
         return response
+
+    def send_messages(self, messages):
+        for message in messages:
+            self.send_message(message.text, message.chat_id, message.player_id)
+
+    async def send_message_async(self, text, chat_id, user_id):
+        async with aiohttp.ClientSession() as session:
+            await session.post(self._url + "sendMessage", json={'text': text, 'chat_id': chat_id, 'from': user_id, 'parse_mode': 'Markdown'})
+
+    async def prepare_message_send(self, messages):
+        lst2 = (self.send_message_async(message.text, message.chat_id,
+                                   message.player_id) for message in messages)
+        await asyncio.gather(*lst2)
+
+    def send_messages_async(self, messages):
+        asyncio.run(self.prepare_message_send(messages))
 
 
 class Message:
