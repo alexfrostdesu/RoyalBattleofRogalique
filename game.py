@@ -142,20 +142,22 @@ class Game:
                         'HP restored', self._chat_id, self._player_id)
                     self.send_stats(self.playerchar)
                 else:
-                    elf.enqueue_message('Not enough gold', self._chat_id, self._player_id)
+                    self.enqueue_message('Not enough gold', self._chat_id, self._player_id)
             if message == 'P':
                 if self.playerchar.get_gold() >= 10:
                     self.playerchar.set_gold(self.playerchar.get_gold() - 10)
                     self.playerchar.set_hp(self.playerchar.get_current_hp() + 10)
-                    elf.enqueue_message('HP restored', self._chat_id, self._player_id)
+                    self.enqueue_message(
+                        'HP restored', self._chat_id, self._player_id)
                     self.send_stats(self.playerchar)
                 else:
-                    elf.enqueue_message('Not enough gold', self._chat_id, self._player_id)
+                    self.enqueue_message('Not enough gold', self._chat_id, self._player_id)
             if message == 'A':
                 if self.playerchar.get_gold() >= 1000:
                     self.playerchar.set_gold(self.playerchar.get_gold() - 1000)
                     self.playerchar.set_attack(self.playerchar._attack + 10)
-                    elf.enqueue_message('Attack Boosted', self._chat_id, self._player_id)
+                    self.enqueue_message(
+                        'Attack Boosted', self._chat_id, self._player_id)
                     self.send_stats(self.playerchar)
                 else:
                     self.enqueue_message(
@@ -163,7 +165,8 @@ class Game:
             if message == 'MP':
                 if self.playerchar.get_gold() >= 1000:
                     self.playerchar.set_gold(self.playerchar.get_gold() - 1000)
-                    elf.enqueue_message('MP Boosted', self._chat_id, self._player_id)
+                    self.enqueue_message(
+                        'MP Boosted', self._chat_id, self._player_id)
                     self.send_stats(self.playerchar)
                 else:
                     self.enqueue_message(
@@ -198,9 +201,9 @@ class Game:
                 self.battle()
             elif message == 'N':
                 self.set_state('Base')
-                elf.enqueue_message(You've lost half of your gold, while running away", self._chat_id, self._player_id)
+                self.enqueue_message("You've lost half of your gold, while running away", self._chat_id, self._player_id)
                 self.playerchar.set_gold(self.playerchar.get_gold()/2)
-                elf.enqueue_message(DialogMessage('base').get_message(), self._chat_id, self._player_id)
+                self.enqueue_message(DialogMessage('base').get_message(), self._chat_id, self._player_id)
     def create_enemy_list(self, lvl):
         """
         Enemy spawn rules
