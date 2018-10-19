@@ -30,7 +30,6 @@ class BotHandler:
         """
         while True:
             response = requests.get(self._url + "getUpdates", {'offset': self._offset, 'timeout': 20})
-            print('Updating')  # testing reasons
             update = response.json()['result']
             if update == []:
                 pass
