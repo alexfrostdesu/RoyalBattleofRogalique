@@ -401,11 +401,14 @@ class Game:
 # TODO: item sets
 # TODO: initiative
 
+from save import RedisConnection, REDIS_URL
+
 class GameManager():
     """Holds games for all players, rutes and manages them"""
 
     def __init__(self):
-        self.user_list = dict()
+        self.redis = RedisConnection(REDIS_URL)
+        self.user_list = self.redis.get_all_games()
 
     def merge_messages(self, messages):
         """
@@ -426,8 +429,8 @@ class GameManager():
         return result
 
     def generate_replays(self, update):
+        messages_to_send = []
         try:
-            messages_to_send = []
             for msg in update:
                 new_message = Message(msg['message'])
                 if new_message.get_type() != 'text':
@@ -472,6 +475,7 @@ class GameManager():
                     else:
                         messages_to_send.append(OutMessage(
                             'Type /start to enter the game', chat_id, player_id))
+                    self.redis.save_game(chat_id, player_game)
             return self.merge_messages(messages_to_send)
         except:
             print("Some went wrong")
