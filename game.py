@@ -436,6 +436,7 @@ class GameManager():
                 if new_message.get_type() != 'text':
                     pass
                 else:
+                    player_game = None
                     player_id = new_message.get_user_id()
                     chat_id = new_message.get_chat_id()
                     content = new_message.get_content()
@@ -475,7 +476,8 @@ class GameManager():
                     else:
                         messages_to_send.append(OutMessage(
                             'Type /start to enter the game', chat_id, player_id))
-                    self.redis.save_game(chat_id, player_game)
+                    if player_game:
+                        self.redis.save_game(chat_id, player_game)
             return self.merge_messages(messages_to_send)
         except:
             print("Some went wrong")
