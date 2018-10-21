@@ -618,10 +618,10 @@ class GreaterMonster(Monster):
         lvl_mult *= 2
         super().__init__(lvl_mult)
         self._cls = 'Greater Monster'
-        self.add_item(RareItem(int(lvl_mult)))
-        self.add_item(RareItem(int(lvl_mult)))
-        self.add_item(RareItem(int(lvl_mult)))
-        self.add_item(RareItem(int(lvl_mult)))
+        self.add_item(RareItem(int(lvl_mult)/2))
+        self.add_item(RareItem(int(lvl_mult)/2))
+        self.add_item(RareItem(int(lvl_mult)/2))
+        self.add_item(RareItem(int(lvl_mult)/2))
         self._hp = self.get_maxhp()
         self._mp = self.get_mp()
 

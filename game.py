@@ -204,24 +204,27 @@ class Game:
                 self.enqueue_message("You've lost half of your gold, while running away", self._chat_id, self._player_id)
                 self.playerchar.set_gold(self.playerchar.get_gold()/2)
                 self.enqueue_message(DialogMessage('base').get_message(), self._chat_id, self._player_id)
+
     def create_enemy_list(self, lvl):
         """
         Enemy spawn rules
         Returns list of enemies
         """
         enemy_list = []
-        monster = (5, 10, 20)
-        g_monster = (10, 20, 30)
+        monster = (10, 20, 30)
+        g_monster = (20, 30, 40)
+        enemies_count = lvl // 10 + 1
+
 
         for step in g_monster:
             ind = g_monster.index(step)
-            if lvl >= step and len(enemy_list) < 3:
+            if lvl >= step and len(enemy_list) < enemies_count:
                 if self.roll(4 - ind):
                     enemy_list.append(GreaterMonster(lvl))
 
         for step in monster:
             ind = monster.index(step)
-            if lvl >= step and len(enemy_list) < 3:
+            if lvl >= step and len(enemy_list) < enemies_count:
                 if self.roll(4 - ind):
                     enemy_list.append(Monster(lvl))
         if enemy_list == []:
