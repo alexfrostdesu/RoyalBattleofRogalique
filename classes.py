@@ -483,7 +483,8 @@ class Warrior(Character):
         """
         Returns warrior's passive defence bonus
         """
-        return math.exp(self.get_current_hp()/self.get_maxhp())/(math.e * 3)
+        hp_percent = self.get_current_hp()/self.get_maxhp()
+        return math.exp(math.sqrt(hp_percent))/math.e
 
 #   Class specific methods modifications #
 
@@ -491,7 +492,7 @@ class Warrior(Character):
         """
         Returns character's defence modifier
         """
-        return 1 / (math.sqrt(self.get_armour()/30 + 1)) * self.get_passive_defence_bonus()
+        return (1 / (math.sqrt(self.get_armour()/30 + 1))) * self.get_passive_defence_bonus()
 
     def get_stats(self):
         """
@@ -619,10 +620,10 @@ class GreaterMonster(Monster):
         lvl_mult *= 1.5
         super().__init__(lvl_mult)
         self._cls = 'Greater Monster'
-        self.add_item(RareItem(int(lvl_mult)/2))
-        self.add_item(RareItem(int(lvl_mult)/2))
-        self.add_item(RareItem(int(lvl_mult)/2))
-        self.add_item(RareItem(int(lvl_mult)/2))
+        self.add_item(RareItem(int(lvl_mult/2)))
+        self.add_item(RareItem(int(lvl_mult/2)))
+        self.add_item(RareItem(int(lvl_mult/2)))
+        self.add_item(RareItem(int(lvl_mult/2)))
         self._hp = self.get_maxhp()
         self._mp = self.get_mp()
         if random.random() > 0.5:
