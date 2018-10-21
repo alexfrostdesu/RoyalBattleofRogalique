@@ -128,10 +128,10 @@ class Game:
         """
         Shop part
         """
-        if message not in ['HP', 'A', 'MP', 'E', 'P']:  # standard check for right input
+        if message not in ['HP', 'A', 'M', 'E', 'SP']:  # standard check for right input
             self.enqueue_message('Please input correct command', self._chat_id, self._player_id)
             self.enqueue_message(StatusMessage(self.playerchar).shop_message(), self._chat_id, self._player_id)
-        else:
+        elif message != 'E':
             if message == 'HP':
                 hp = int(self.playerchar.get_maxhp() -
                          self.playerchar.get_current_hp())
@@ -143,10 +143,19 @@ class Game:
                     self.send_stats(self.playerchar)
                 else:
                     self.enqueue_message('Not enough gold', self._chat_id, self._player_id)
-            if message == 'P':
+            if message == 'SP':
                 if self.playerchar.get_gold() >= 10:
                     self.playerchar.set_gold(self.playerchar.get_gold() - 10)
                     self.playerchar.set_hp(self.playerchar.get_current_hp() + 10)
+                    self.enqueue_message(
+                        'HP restored', self._chat_id, self._player_id)
+                    self.send_stats(self.playerchar)
+                else:
+                    self.enqueue_message('Not enough gold', self._chat_id, self._player_id)
+            if message == 'MP':
+                if self.playerchar.get_gold() >= 100:
+                    self.playerchar.set_gold(self.playerchar.get_gold() - 100)
+                    self.playerchar.set_hp(self.playerchar.get_current_hp() + 100)
                     self.enqueue_message(
                         'HP restored', self._chat_id, self._player_id)
                     self.send_stats(self.playerchar)
@@ -162,7 +171,7 @@ class Game:
                 else:
                     self.enqueue_message(
                         'Not enough gold', self._chat_id, self._player_id)
-            if message == 'MP':
+            if message == 'M':
                 if self.playerchar.get_gold() >= 1000:
                     self.playerchar.set_gold(self.playerchar.get_gold() - 1000)
                     self.enqueue_message(
@@ -171,10 +180,10 @@ class Game:
                 else:
                     self.enqueue_message(
                         'Not enough gold', self._chat_id, self._player_id)
-            if message == 'E':
-                self.set_state('Base')
-                self.enqueue_message(DialogMessage(
-                    'base').get_message(), self._chat_id, self._player_id)
+            self.enqueue_message(StatusMessage(self.playerchar).shop_message(), self._chat_id, self._player_id)
+        else:
+            self.set_state('Base')
+            self.enqueue_message(DialogMessage('base').get_message(), self._chat_id, self._player_id)
 
     def battle_choice(self, message=None):
         """
@@ -211,23 +220,23 @@ class Game:
         Returns list of enemies
         """
         enemy_list = []
-        monster = (10, 20, 30)
-        g_monster = (20, 30, 40)
-        enemies_count = lvl // 10 + 1
-
+        monster = (0, 10, 20)
+        g_monster = (10, 20, 30)
+        enemies_count = lvl // 10
 
         for step in g_monster:
             ind = g_monster.index(step)
-            if lvl >= step and len(enemy_list) < enemies_count:
+            if lvl >= step and len(enemy_list) < enemies_count + 1:
                 if self.roll(4 - ind):
                     enemy_list.append(GreaterMonster(lvl))
 
         for step in monster:
             ind = monster.index(step)
-            if lvl >= step and len(enemy_list) < enemies_count:
+            if lvl >= step and len(enemy_list) < enemies_count + 1:
                 if self.roll(4 - ind):
                     enemy_list.append(Monster(lvl))
-        if enemy_list == []:
+
+        if len(enemy_list) <= enemies_count:
             enemy_list.append(Monster(lvl))
         return enemy_list
 
@@ -332,10 +341,12 @@ class Game:
             enemy_score = enemy.get_maxhp() + enemy.get_attack()
             if enemy_score > 200:
                 rare_drop(0.8)
-            elif enemy_score > 100:
+            elif enemy_score > 150:
                 rare_drop(0.5)
-            elif enemy_score > 50:
+            elif enemy_score > 100:
                 common_drop(1)
+            elif enemy_score > 50:
+                common_drop(0.8)
             else:
                 common_drop(0.5)
         for item in self.item_drop:

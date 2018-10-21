@@ -23,7 +23,6 @@ class Character:
         self._inventory = {'Armour': None, 'Weapon': None, 'Helm': None, 'Boots': None, 'Ring': None}
         self._skills = []
         self._passives = {}
-        self.recalculate_item_bonus()
         self._hp = self._maxhp = self.get_maxhp()
 
 #   Class getters and setters #
@@ -160,7 +159,7 @@ class Character:
         """
         Returns character's defence modifier
         """
-        return 1 / math.sqrt(self.get_armour()/50 + 1)
+        return 1 / math.sqrt(self.get_armour()/30 + 1)
 
 #   EXP getters and setters #
 
@@ -244,6 +243,7 @@ class Character:
         """
         Recalculates all item bonuses
         """
+        hp_percent = self.get_current_hp()/self.get_maxhp()
         self._hp_item_bonus = 0
         self._mp_item_bonus = 0
         self._attack_item_bonus = 0
@@ -256,6 +256,7 @@ class Character:
                 self._mp_item_bonus += item.get_bonus_mp()
                 self._attack_item_bonus += item.get_bonus_attack()
                 self._armour_item_bonus += item.get_bonus_defence()
+        self.set_hp(self.get_maxhp() * hp_percent)
 
 #   Skills #
 
@@ -482,7 +483,7 @@ class Warrior(Character):
         """
         Returns warrior's passive defence bonus
         """
-        return math.exp(self.get_current_hp()/self.get_maxhp())/math.e
+        return math.exp(self.get_current_hp()/self.get_maxhp())/(math.e * 3)
 
 #   Class specific methods modifications #
 
@@ -490,7 +491,7 @@ class Warrior(Character):
         """
         Returns character's defence modifier
         """
-        return 1 / (math.sqrt(self.get_armour()/50 + 1)) * self.get_passive_defence_bonus()
+        return 1 / (math.sqrt(self.get_armour()/30 + 1)) * self.get_passive_defence_bonus()
 
     def get_stats(self):
         """
@@ -605,17 +606,17 @@ class Monster(Character):
     def __init__(self, lvl_mult=1):
         super().__init__()
         self._cls = 'Monster'
-        self._lvl_mult = lvl_mult * 2 / math.sqrt(lvl_mult * 4)
-        self._maxhp = (random.randint(21, 40) * self._lvl_mult)
+        self._lvl_mult = lvl_mult * 2 / math.sqrt(lvl_mult * 3)
+        self._maxhp = (random.randint(16, 40) * self._lvl_mult)
         self._hp = self.get_maxhp()
         self._mp = (random.randint(1, 1) * self._lvl_mult)
         self._attack = (random.randint(5, 10) * self._lvl_mult)
-        self._armour = 10 * random.uniform(1, 2)
+        self._armour = 5 * random.uniform(1, 2)
 
 
 class GreaterMonster(Monster):
     def __init__(self, lvl_mult=1):
-        lvl_mult *= 2
+        lvl_mult *= 1.5
         super().__init__(lvl_mult)
         self._cls = 'Greater Monster'
         self.add_item(RareItem(int(lvl_mult)/2))
@@ -624,6 +625,8 @@ class GreaterMonster(Monster):
         self.add_item(RareItem(int(lvl_mult)/2))
         self._hp = self.get_maxhp()
         self._mp = self.get_mp()
+        if random.random() > 0.5:
+            self.add_skill(VoidStrike(self))
 
 
 class Skill:
@@ -686,13 +689,25 @@ class Fireball(Skill):
     def __init__(self, character):
         super().__init__(character)
         self._cooldown = 4
-        self._current_cd = 0
 
     def get_damage(self):
         """
         Returns spell's damage
         """
         return self._owner.get_mp() * 1.5
+
+
+class VoidStrike(Skill):
+    def __init__(self, character):
+        super().__init__(character)
+        self._cooldown = 3
+
+    def get_damage(self):
+        """
+        Returns spell's damage
+        """
+        return self._owner.get_attack()
+
 
 
 

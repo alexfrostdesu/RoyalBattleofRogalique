@@ -99,10 +99,11 @@ class StatusMessage:
         player_max_hp = self._character.get_maxhp()
         msg = "*Welcome to the shop!*\n" \
               f"Current gold: {self._character.get_gold()} \n" \
-               "What would you like to buy? *(HP/P/A/MP)*\n" \
-               f"`  HP refill:    {player_max_hp - player_hp:1.0f} gold`\n" \
-                "`  Small Potion: 10 gold` \n" \
-                "`  Attack boost: 1000 gold` \n" \
-                "`  MP boost:     1000 gold` \n" \
+               "What would you like to buy? *(HP/SP/MP/A/M)*\n" \
+               f"`HP -  HP refill:     {player_max_hp - player_hp:1.0f} gold`\n" \
+                "`SP -  Small Potion:  10 gold` \n" \
+                "`MP -  Medium Potion: 100 gold` \n" \
+                "`A  -  Attack boost:  1000 gold` \n" \
+                "`M  -  MP boost:      1000 gold` \n" \
                 "Type *E* to exit shop"
         return msg
