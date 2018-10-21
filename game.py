@@ -128,7 +128,7 @@ class Game:
         """
         Shop part
         """
-        if message not in ['HP', 'A', 'M', 'E', 'SP']:  # standard check for right input
+        if message not in ['HP', 'A', 'M', 'E', 'SP', 'MP']:  # standard check for right input
             self.enqueue_message('Please input correct command', self._chat_id, self._player_id)
             self.enqueue_message(StatusMessage(self.playerchar).shop_message(), self._chat_id, self._player_id)
         elif message != 'E':
