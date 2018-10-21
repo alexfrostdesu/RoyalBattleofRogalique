@@ -37,3 +37,39 @@ class RedisConnection(object):
         for key in keys:
             result[int(key)] = self.get_game(key)
         return result
+
+    def delete_all_saves(self):
+        """
+        Deletes all the entries in redis
+        Requires python process stop, otherwise will be overritten by new entries
+        """
+        keys = self.connection.keys('*')
+        for key in keys:
+            self.delete(key)
+
+    def short_info(self):
+        """
+        Prints all saved character classes, their lvl and user_id
+        """
+        keys = self.connection.keys('*')
+        res = ""
+        for key in keys:
+            game = self.get_game(key)
+            player = game.get_playerchar()
+            lvl = player.get_lvl()
+            cla = player.get_class()
+            res += f"player {int(key)} of class {cla}:lvl {lvl}\n"
+        print(res)
+
+    def full_info(self):
+        """
+        Prints all the saved character's stats
+        """
+        keys = self.connection.keys('*')
+        res = ""
+        from events import StatusMessage
+        for key in keys:
+            game = self.get_game(key)
+            player = game.get_playerchar()
+            res += StatusMessage(player).stats_message() + '\n'
+        print(res)
