@@ -483,7 +483,7 @@ class Warrior(Character):
         """
         Returns warrior's passive defence bonus
         """
-        hp_percent = self.get_current_hp()/self.get_maxhp()
+        hp_percent = math.fabs(self.get_current_hp()/self.get_maxhp())
         return math.exp(math.sqrt(hp_percent))/math.e
 
 #   Class specific methods modifications #
