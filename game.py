@@ -3,7 +3,7 @@ from events import DialogMessage, StatusMessage
 from bot_handler import BotHandler, Message
 import random
 import os
-import traceback
+import traceback, functools
 
 TOKEN = os.environ["TOKEN"]
 
@@ -23,6 +23,7 @@ class Game:
         self._chat_id = chat_id
         self._game_state = 'Game Start'
         self._message_send_list = []
+        self._first_launch = True
 
     def check_state(self):
         """
@@ -35,6 +36,19 @@ class Game:
         Setting game state to another value
         """
         self._game_state = state
+
+    @functools.lru_cache(8)
+    def get_game_states(self):
+        return {'Game Start':{"func": self.game_start,
+                              "input": ['Mage', 'Warrior', 'Rogue']},
+            'Base':          {"func": self.base,
+                              "input": ['Y', 'S', 'I', 'B']},
+            'Battle Choice': {"func": self.battle_choice,
+                              "input": ['Y', 'N']},
+            'Item Choice':   {"func": self.item_choice,
+                              "input": ['E', 'N']},
+            'Shop':          {"func": self.shop,
+                              "input": ['HP', 'A', 'M', 'E', 'SP', 'MP']}}
 
     def get_playerchar(self):
         """
@@ -55,6 +69,24 @@ class Game:
         messages = self._message_send_list
         self._message_send_list = []
         return messages
+
+    def get_state_function(self):
+        """Returns a function appropriate for current state"""
+        return self.get_game_states()[self._game_state]["func"]
+
+    def get_state_input(self):
+        """Returns input approptiate for current state"""
+        return self.get_game_states()[self._game_state]["input"]
+
+    def process_incoming_message(self, message):
+        """
+        Takes incoming message
+        processes basen on a game state
+        and returns reply messages
+        """
+        fnc = self.get_state_function()
+        fnc(message)
+        return self.send_all_messages()
 
 #   Lazy copypaste 2 lines at a time #
 
@@ -83,7 +115,7 @@ class Game:
         Character selection state
         Intended for single use
         """
-        if message not in ['Mage', 'Warrior', 'Rogue']:  # standard check for right input
+        if message not in self.get_state_input():  # standard check for right input
             self.enqueue_message(
                 'Please input correct class name', self._chat_id, self._player_id)
             self.enqueue_message(DialogMessage(
@@ -102,7 +134,7 @@ class Game:
         Adventure starts from here
         Inventory, status, shop
         """
-        if message not in ['Y', 'S', 'I', 'B']:  # standard check for right input
+        if message not in self.get_state_input():  # standard check for right input
             self.enqueue_message('Please input correct command',
                                  self._chat_id, self._player_id)
             self.enqueue_message(DialogMessage(
@@ -117,7 +149,7 @@ class Game:
                 self.enqueue_message(DialogMessage(
                     'base').get_message(), self._chat_id, self._player_id)
             elif message == 'Y':
-                self.battle_choice()
+                self.create_battle()
                 self.set_state('Battle Choice')
             elif message == 'B':
                 self.enqueue_message(StatusMessage(
@@ -128,7 +160,7 @@ class Game:
         """
         Shop part
         """
-        if message not in ['HP', 'A', 'M', 'E', 'SP', 'MP']:  # standard check for right input
+        if message not in self.get_state_input():  # standard check for right input
             self.enqueue_message('Please input correct command', self._chat_id, self._player_id)
             self.enqueue_message(StatusMessage(self.playerchar).shop_message(), self._chat_id, self._player_id)
         elif message != 'E':
@@ -185,21 +217,22 @@ class Game:
             self.set_state('Base')
             self.enqueue_message(DialogMessage('base').get_message(), self._chat_id, self._player_id)
 
-    def battle_choice(self, message=None):
+    def create_battle(self):
+        """Creating the enemy list first time"""
+        self.enemies = self.create_enemy_list(self.playerchar.get_lvl())  # creating enemy
+        for target in self.enemies:  # sending info for all enemies
+            self.enqueue_message(DialogMessage(
+                'see_enemy_C', target).get_message(), self._chat_id, self._player_id)
+            self.send_stats(target)
+        self.enqueue_message(DialogMessage('attack_enemy').get_message(
+        ), self._chat_id, self._player_id)  # prompting to attack
+
+    def battle_choice(self, message):
         """
         Battle battle_choice part
         Fight or flight, battle() or base()
         """
-        if message is None:  # Creating the enemy list first time
-            self.enemies = self.create_enemy_list(
-                self.playerchar.get_lvl())  # creating enemy
-            for target in self.enemies:  # sending info for all enemies
-                self.enqueue_message(DialogMessage(
-                    'see_enemy_C', target).get_message(), self._chat_id, self._player_id)
-                self.send_stats(target)
-            self.enqueue_message(DialogMessage('attack_enemy').get_message(
-            ), self._chat_id, self._player_id)  # prompting to attack
-        elif message not in ['Y', 'N']:  # standard check for right input
+        if message not in self.get_state_input():  # standard check for right input
             self.enqueue_message('Please input correct command',
                                  self._chat_id, self._player_id)
             self.enqueue_message(DialogMessage(
@@ -390,7 +423,7 @@ class Game:
         Player battle_choice of equipping the item
         None is a dirty hack and I am not proud
         """
-        if message not in ['E', 'N']:
+        if message not in self.get_state_input():
             self.enqueue_message('Please input correct command',
                                  self._chat_id, self._player_id)
             self.enqueue_message(DialogMessage(
@@ -415,14 +448,19 @@ class Game:
 # TODO: item sets
 # TODO: initiative
 
-from save import RedisConnection, REDIS_URL
-
 class GameManager():
     """Holds games for all players, rutes and manages them"""
 
-    def __init__(self):
-        self.redis = RedisConnection(REDIS_URL)
-        self.user_list = self.redis.get_all_games()
+    def __init__(self, redis_save=True):
+        if redis_save:
+            from save import RedisConnection, REDIS_URL
+            self.redis = RedisConnection(REDIS_URL)
+            self.user_list = self.redis.get_all_games()
+        else:
+            self.user_list = {}
+        self.redis_save = redis_save
+        self.commands_out_game = {'/start': self.start_new_game}
+        self.commands_in_game = {'/restart': self.restart_game}
 
     def merge_messages(self, messages):
         """
@@ -442,6 +480,48 @@ class GameManager():
             result.append(OutMessage(res, key, key))
         return result
 
+    def start_new_game(self, chat_id, player_id):
+        """Starts a new game, and returns appropriate messages"""
+        self.user_list[player_id] = Game(chat_id, player_id)
+        return [OutMessage(
+            'Ready Player One', chat_id, player_id),
+            OutMessage(DialogMessage(
+                'start_game').get_message(), chat_id, player_id)]
+
+    def restart_game(self, chat_id, player_id):
+        """Restarts a game"""
+        self.user_list.pop(player_id)
+        return [OutMessage('Game reset', chat_id, player_id)]
+
+    def process_out_game_commands(self, chat_id, player_id, content):
+        """Processes all the commands outside of game"""
+        if content in self.commands_out_game.keys():
+            return self.commands_out_game[content](chat_id, player_id)
+        else: 
+            return self.invalid_input(chat_id, player_id)
+
+    def process_in_game_commands(self, chat_id, player_id, content):
+        "Process all the ingame commands"
+        if content in self.commands_in_game.keys():
+            return self.commands_in_game[content](chat_id, player_id)
+        else: 
+            return []
+
+    def process_commands(self, chat_id, player_id, content):
+        """Processes all the commands"""
+        if player_id in self.user_list.keys():
+            return self.process_in_game_commands(chat_id, player_id, content)
+        else:
+            return self.process_out_game_commands(chat_id, player_id, content)
+
+    def get_all_commands(self):
+        """Returns all avaliable commands"""
+        return list(self.commands_out_game.keys())+list(self.commands_in_game.keys())
+
+    def invalid_input(self, chat_id, player_id):
+        return [OutMessage(
+            'Type /start to enter the game', chat_id, player_id)]
+
     def generate_replays(self, update):
         messages_to_send = []
         try:
@@ -450,54 +530,26 @@ class GameManager():
                 if new_message.get_type() != 'text':
                     pass
                 else:
-                    player_game = None
-                    player_id = new_message.get_user_id()
+                    user = new_message.get_user_id()
                     chat_id = new_message.get_chat_id()
                     content = new_message.get_content()
-                    if player_id['id'] not in self.user_list.keys() and content == '/start':
-                        print(
-                            f"Player: {player_id}, Chat: {chat_id}, Content: {content}")
-                        messages_to_send.append(OutMessage(
-                            'Ready Player One', chat_id, player_id))
-                        messages_to_send.append(OutMessage(DialogMessage(
-                            'start_game').get_message(), chat_id, player_id))
-                        player_game = Game(chat_id, player_id)
-                        self.user_list[player_id['id']] = player_game
-                    elif player_id['id'] in self.user_list:
-                        if new_message.get_content() == '/restart':
-                            print(
-                                f"Player: {player_id}, Chat: {chat_id}, Content: {content}")
-                            self.user_list.pop(player_id['id'])
-                            messages_to_send.append(OutMessage(
-                                'Game reset', chat_id, player_id))
-                        else:
-                            player_game = self.user_list[player_id['id']]
-                            game_state = player_game.check_state()
-                            print(
-                                f"Player: {player_id}, Chat: {chat_id}, Content: {content}, Game State: {game_state}")
-                            if game_state == 'Game Start':
-                                player_game.game_start(content)
-                            elif game_state == 'Base':
-                                player_game.base(content)
-                            elif game_state == 'Battle Choice':
-                                player_game.battle_choice(content)
-                            elif game_state == 'Item Choice':
-                                player_game.item_choice(
-                                    content)
-                            elif game_state == 'Shop':
-                                player_game.shop(content)
-                            messages_to_send += player_game.send_all_messages()
-                    else:
-                        messages_to_send.append(OutMessage(
-                            'Type /start to enter the game', chat_id, player_id))
-                    if player_game:
-                        self.redis.save_game(chat_id, player_game)
-            return self.merge_messages(messages_to_send)
+                    player_id = user["id"]
+                    if content in self.get_all_commands(): # commands
+                        messages_to_send += self.process_commands(chat_id, player_id, content)
+                    elif player_id in self.user_list.keys(): # game
+                        player_game = self.user_list[player_id]
+                        messages_to_send += player_game.process_incoming_message(
+                            content)
+                        if self.redis_save:
+                            self.redis.save_game(chat_id, player_game)
+                    else: # invalid input
+                        messages_to_send += self.invalid_input(chat_id, player_id)
         except:
-            print("Some went wrong")
+            print("Something went wrong")
             print("*"*50)
             traceback.print_exc()
             print("*"*50)
+        return self.merge_messages(messages_to_send)
 
 
 def main():
