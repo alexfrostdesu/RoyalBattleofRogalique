@@ -3,7 +3,7 @@ from events import DialogMessage, StatusMessage
 from bot_handler import BotHandler, Message
 import random
 import os
-import traceback
+import traceback, functools
 
 TOKEN = os.environ["TOKEN"]
 
@@ -21,18 +21,9 @@ class Game:
     def __init__(self, chat_id, player_id):
         self._player_id = player_id
         self._chat_id = chat_id
-        self._game_states = {'Game Start':   {"func": self.game_start,
-                                              "input": ['Mage', 'Warrior', 'Rogue']},
-                            'Base':          {"func": self.base,
-                                              "input": ['Y', 'S', 'I', 'B']},
-                            'Battle Choice': {"func": self.battle_choice,
-                                              "input": ['Y', 'N']},
-                            'Item Choice':   {"func": self.item_choice,
-                                              "input": ['E', 'N']},
-                            'Shop':          {"func": self.shop,
-                                              "input": ['HP', 'A', 'M', 'E', 'SP', 'MP']}}
         self._game_state = 'Game Start'
         self._message_send_list = []
+        self._first_launch = True
 
     def check_state(self):
         """
@@ -45,6 +36,19 @@ class Game:
         Setting game state to another value
         """
         self._game_state = state
+
+    @functools.lru_cache(8)
+    def get_game_states(self):
+        return {'Game Start':{"func": self.game_start,
+                              "input": ['Mage', 'Warrior', 'Rogue']},
+            'Base':          {"func": self.base,
+                              "input": ['Y', 'S', 'I', 'B']},
+            'Battle Choice': {"func": self.battle_choice,
+                              "input": ['Y', 'N']},
+            'Item Choice':   {"func": self.item_choice,
+                              "input": ['E', 'N']},
+            'Shop':          {"func": self.shop,
+                              "input": ['HP', 'A', 'M', 'E', 'SP', 'MP']}}
 
     def get_playerchar(self):
         """
@@ -68,11 +72,11 @@ class Game:
 
     def get_state_function(self):
         """Returns a function appropriate for current state"""
-        return self._game_states[self._game_state]["func"]
+        return self.get_game_states()[self._game_state]["func"]
 
     def get_state_input(self):
         """Returns input approptiate for current state"""
-        return self._game_states[self._game_state]["input"]
+        return self.get_game_states()[self._game_state]["input"]
 
     def process_incoming_message(self, message):
         """
@@ -444,14 +448,17 @@ class Game:
 # TODO: item sets
 # TODO: initiative
 
-from save import RedisConnection, REDIS_URL
-
 class GameManager():
     """Holds games for all players, rutes and manages them"""
 
-    def __init__(self):
-        self.redis = RedisConnection(REDIS_URL)
-        self.user_list = self.redis.get_all_games()
+    def __init__(self, redis_save=True):
+        if redis_save:
+            from save import RedisConnection, REDIS_URL
+            self.redis = RedisConnection(REDIS_URL)
+            self.user_list = self.redis.get_all_games()
+        else:
+            self.user_list = {}
+        self.redis_save = redis_save
         self.commands_out_game = {'/start': self.start_new_game}
         self.commands_in_game = {'/restart': self.restart_game}
 
@@ -527,14 +534,14 @@ class GameManager():
                     chat_id = new_message.get_chat_id()
                     content = new_message.get_content()
                     player_id = user["id"]
-
                     if content in self.get_all_commands(): # commands
                         messages_to_send += self.process_commands(chat_id, player_id, content)
                     elif player_id in self.user_list.keys(): # game
                         player_game = self.user_list[player_id]
                         messages_to_send += player_game.process_incoming_message(
                             content)
-                        self.redis.save_game(chat_id, player_game)
+                        if self.redis_save:
+                            self.redis.save_game(chat_id, player_game)
                     else: # invalid input
                         messages_to_send += self.invalid_input(chat_id, player_id)
         except:
