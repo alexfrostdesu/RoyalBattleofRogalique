@@ -1,23 +1,13 @@
 class DialogMessage:
-    def __init__(self, code, object=None, amount=-1, target=None):
+    def __init__(self, code, params):
         self._code = code
-        self._character = ''
-        self._skill = ''
-        self._item = ''
-        self._amount = 0
-        self._target = ''
-        if object is not None and (
-                object.get_character() or object.__class__.__bases__[0].__name__ in ('Character', 'Monster')):
-            self._character = object.get_class()
-            if object.is_skill_available():
-                self._skill = object.first_available_skill().get_name()
-        elif object.__class__.__name__ == 'Item' or object.__class__.__bases__[0].__name__ == 'Item':
-            self._item = object.get_full_name()
-        if amount >= 0:
-            self._amount = str(round(amount, 1))
-        if target is not None and (
-                target.get_character() or target.__class__.__bases__[0].__name__ in ('Character', 'Monster')):
-            self._target = target.get_class()
+        self._character = params.get('char')
+        self._skill = params.get('skill')
+        self._item = params.get('item')
+        self._amount = params.get('amount')
+        self._target = params.get('target')
+        if self._amount is not None:
+            self._amount = str(round(self._amount, 1))
 
     def get_message(self):
         messages = dict(
@@ -31,12 +21,12 @@ class DialogMessage:
         if self._character != '' or self._item != '':
             action_messages = dict(
                 attack_CAT=f"*{self._character}* attacked *{self._target}* for *{self._amount} HP* damage!",
-                attack_pure_CAT=f"That damaged *{self._target}* for *{self._amount} HP*!",
+                attack_pure_CAT=f"*{self._target}* received *{self._amount}* pure damage to HP!",
                 attack_es_CAT=f"*{self._character}* attacked *{self._target}* for *{self._amount} ES* damage!",
                 used_skill_C=f"*{self._character}* used {self._skill}!",
                 broke_es_C=f"*{self._character}*'s Energy Shield is destroyed!",
                 broke_es_dmg_hp_CAT=f"*{self._character}* broke *{self._target}*'s Energy Shield, while also dealing *{self._amount}* HP damage!",
-                evaded_CA=f"{self._character} evaded {self._amount} damage!",
+                evaded_CA=f"*{self._character}* evaded *{self._amount}* damage!",
                 crit="Critical hit!",
                 lvlup_CA=f"*{self._character}* got a level up! Your level is now {self._amount}\n",
                 healed_CA=f"{self._character} was healed for {self._amount} HP",
