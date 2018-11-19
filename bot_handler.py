@@ -37,26 +37,26 @@ class BotHandler:
                 self._offset = update[-1]['update_id'] + 1
                 return update
 
-    def send_message(self, text, chat_id, user_id):
+    def send_message(self, text, chat_id, user_id, keyboard=None):
         """
         Sends message via sendMessage request
         text = any string (Markdown is on)
         chat and user id - send to who
         """
-        response = requests.post(self._url + "sendMessage", {'text': text, 'chat_id': chat_id, 'from': user_id, 'parse_mode': 'Markdown'})
+        response = requests.post(self._url + "sendMessage", {'text': text, 'chat_id': chat_id, 'from': user_id, 'parse_mode': 'Markdown', 'reply_markup': keyboard})
         return response
 
     def send_messages(self, messages):
         for message in messages:
-            self.send_message(message.text, message.chat_id, message.player_id)
+            self.send_message(message.text, message.chat_id, message.player_id, message.keyboard)
 
-    async def send_message_async(self, text, chat_id, user_id):
+    async def send_message_async(self, text, chat_id, user_id, keyboard=None):
         async with aiohttp.ClientSession() as session:
-            await session.post(self._url + "sendMessage", json={'text': text, 'chat_id': chat_id, 'from': user_id, 'parse_mode': 'Markdown'})
+            await session.post(self._url + "sendMessage", json={'text': text, 'chat_id': chat_id, 'from': user_id, 'parse_mode': 'Markdown', 'reply_markup': keyboard})
 
     async def prepare_message_send(self, messages):
         lst2 = (self.send_message_async(message.text, message.chat_id,
-                                   message.player_id) for message in messages)
+                                   message.player_id, message.keyboard) for message in messages)
         await asyncio.gather(*lst2)
 
     def send_messages_async(self, messages):
