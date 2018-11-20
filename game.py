@@ -231,7 +231,7 @@ class Game:
         self.enemies = self.create_enemy_list(self.playerchar.get_lvl())  # creating enemy
         for target in self.enemies:  # sending info for all enemies
             self.enqueue_message(DialogMessage(
-                'see_enemy_C', target).get_message(), self._chat_id, self._player_id, self._keyboard)
+                'see_enemy_C', {'char': target.get_class()}).get_message(), self._chat_id, self._player_id, self._keyboard)
             self.send_stats(target)
         self.enqueue_message(DialogMessage('attack_enemy').get_message(
         ), self._chat_id, self._player_id, self._keyboard)  # prompting to attack
@@ -289,22 +289,25 @@ class Game:
         """
         battle_log = ""  # creating battle log
         while self.playerchar.is_alive():
-            for skill in self.playerchar.get_attack_skills():
-                skill.set_current_cd(skill.get_current_cd() - 1)
-            if self.playerchar.is_skill_available():
-                skill = self.playerchar.first_available_skill()
-                battle_log += self.playerchar.use_attack_skill(
-                    skill, next(enemy for enemy in self.enemies if enemy.is_alive()))
-                skill.set_current_cd(skill.get_cooldown_timer())
-            else:
-                battle_log += self.playerchar.attack(
-                    next(enemy for enemy in self.enemies if enemy.is_alive()))
+            battle_log += self.playerchar.attack(
+                next(enemy for enemy in self.enemies if enemy.is_alive()))
+
+            # for skill in self.playerchar.get_attack_skills():
+            #     skill.set_current_cd(skill.get_current_cd() - 1)
+            # if self.playerchar.is_skill_available():
+            #     skill = self.playerchar.first_available_skill()
+            #     battle_log += self.playerchar.use_attack_skill(
+            #         skill, next(enemy for enemy in self.enemies if enemy.is_alive()))
+            #     skill.set_current_cd(skill.get_cooldown_timer())
+            # else:
+            #     battle_log += self.playerchar.attack(
+            #         next(enemy for enemy in self.enemies if enemy.is_alive()))
             for enemy in self.enemies:
                 if enemy.is_alive():
                     battle_log += enemy.attack(self.playerchar)
                     if not self.playerchar.is_alive():
                         battle_log += DialogMessage('won_C',
-                                                    enemy).get_message()
+                                                    {'char': enemy.get_class()}).get_message()
                         self.enqueue_message(
                             battle_log, self._chat_id, self._player_id, self._keyboard)
                         self.enqueue_message(DialogMessage(
@@ -322,7 +325,7 @@ class Game:
                         break
             if all(not enemy.is_alive() for enemy in self.enemies):
                 battle_log += DialogMessage('won_C',
-                                            self.playerchar).get_message()
+                                            {'char': self.playerchar.get_class()}).get_message()
                 self.enqueue_message(
                     battle_log, self._chat_id, self._player_id, self._keyboard)
                 self.set_state('Battle Won')
@@ -354,7 +357,7 @@ class Game:
             item_healing = random.randint(10, int(enemies[0].get_maxhp()))
             self.enqueue_message(f"You found a *{hp}*!\n" +
                                  DialogMessage(
-                                     'healed_CA', self.playerchar, item_healing).get_message(),
+                                     'healed_CA', {'char': self.playerchar.get_class(), 'amount': item_healing}).get_message(),
                                  self._chat_id, self._player_id)
             self.playerchar.set_hp(
                 self.playerchar.get_current_hp() + item_healing)
@@ -415,7 +418,7 @@ class Game:
         Processing all the drops, and prompting to choose equip item or not
         """
         self.item = self.item_drop[0]
-        self.enqueue_message(DialogMessage('found_item_I', self.item).get_message(
+        self.enqueue_message(DialogMessage('found_item_I', {'item': self.item.get_name()}).get_message(
         ) + "\n" + self.item.get_stats(), self._chat_id, self._player_id, self._keyboard)
         if self.playerchar.get_inventory()[self.item.get_type()]:
             playeritem = self.playerchar.get_inventory()[self.item.get_type()]
