@@ -264,25 +264,25 @@ class Character:
 
     def get_attack_skills(self):
         """
-        Returns character's skills
+        Returns character's attack skills
         """
         return self._attack_skills
 
     def get_defence_skills(self):
         """
-        Returns character's skills
+        Returns character's defence skills
         """
         return self._defence_skills
 
     def add_attack_skill(self, skill):
         """
-        Adds skill to character
+        Adds attack skill to character
         """
         self._attack_skills.append(skill)
 
     def add_defence_skill(self, skill):
         """
-        Adds skill to character
+        Adds defence skill to character
         """
         self._defence_skills.append(skill)
 
@@ -302,17 +302,22 @@ class Character:
         """
         Checks if any of defence skills are ready to use and uses the first one
         """
+        output = ''
         for skill in self.get_defence_skills():
             if skill.is_available():
                 skill.update_skill(self)
                 output = skill.use_skill(damage, attacker)
-                if skill.get_leftoverdamage() == 0:
-                    return output
-                else:
-                    output += self.take_damage_from(skill.get_leftoverdamage(), attacker)
-                    return output
+                damage = skill.get_leftoverdamage()
+                if damage == 0:
+                    break
             else:
                 skill.set_current_cd(skill.get_current_cd() - 1)
+        if damage > 0:
+            output += self.take_damage_from(damage, attacker)
+            return output
+        else:
+            return output
+
 
     def update_attack_skills(self):
         """
@@ -323,43 +328,19 @@ class Character:
 
     def update_defence_skills(self):
         """
-        Updates each attack skill with current character's stats
+        Updates each defence skill with current character's stats
         """
         for skill in self.get_defence_skills():
             skill.update_skill(self)
 
-    # def is_skill_available(self):
-    #     """
-    #     Returns if any of skills are available
-    #     """
-    #     for skill in self.get_attack_skills():
-    #         if skill.get_current_cd() == 0:
-    #             return True
-    #     return False
-    #
-    # def first_available_skill(self):
-    #     """
-    #     Cycles through character's skills and returns first spell that is ready to be used
-    #     Skills are in order of first added
-    #     """
-    #     for skill in self.get_attack_skills():
-    #         if skill.get_current_cd() == 0:
-    #             return skill
-    #
-    # def use_attack_skill(self, skill, other):
-    #     """
-    #     Uses skill to attack target
-    #     """
-    #     damage = skill.get_damage()
-    #     return DialogMessage('used_skill_C', self).get_message() + "\n" + other.take_damage_pure(damage, self)
-    #
-    # def update_skills(self):
-    #     """
-    #     Updates each character skill with current stats
-    #     """
-    #     for skills in (self.get_defence_skills(), self.get_attack_skills()):
-    #         for skill in skills:
-    #             skill.update_stats(self.get_stats())
+    def reset_skills(self):
+        """
+        Resets each defence skill to default state
+        """
+        for skill in self.get_defence_skills():
+            skill.reset()
+        for skill in self.get_attack_skills():
+            skill.reset()
 
     def get_passives(self):
         """
@@ -377,19 +358,21 @@ class Character:
 
 #   Attacking and taking damage #
 
+    def take_damage(self, damage, attacker):
+        """
+        Takes damage from attacker with defence skills check
+        """
+        return self.check_defence_skills(damage, attacker)
+
     def take_damage_from(self, damage, attacker):
         """
-        Takes damage from other character
+        Takes damage from attacker without defence skills check
         Prints message about that attack
         """
-        output = self.check_defence_skills(damage, attacker)
-        if output is not None:
-            return output
-        else:
-            self._hp -= damage * self.get_defence_modifier()
-            output = DialogMessage('attack_CAT', {'char': attacker, 'amount': damage * self.get_defence_modifier(),
-                                                  'target': self.get_class()}).get_message() + "\n"
-            return output
+        self._hp -= damage * self.get_defence_modifier()
+        output = DialogMessage('attack_CAT', {'char': attacker, 'amount': damage * self.get_defence_modifier(),
+                                              'target': self.get_class()}).get_message() + "\n"
+        return output
 
     def take_damage_pure(self, damage, attacker):
         """
@@ -408,7 +391,7 @@ class Character:
             return output
         else:
             attack = self.get_attack() * self.get_attack_modifier()
-            return target.take_damage_from(attack, self.get_class())
+            return target.take_damage(attack, self.get_class())
 
 #   Getting character's stats #
 
@@ -420,12 +403,12 @@ class Character:
                      HP=self.get_current_hp(),
                      MAX_HP=self.get_maxhp(),
                      MP=self.get_mp(),
-                     ATT=round(self.get_attack_stat(), 2),
-                     ATT_BONUS=round(self._attack_item_bonus, 2),
-                     DEF=round(1 - self.get_defence_modifier(), 2),
+                     ATT=self.get_attack_stat(),
+                     ATT_BONUS=self._attack_item_bonus,
+                     DEF=1 - self.get_defence_modifier(),
                      LVL=self.get_lvl(),
-                     EXP=round(self.get_exp(), 2),
-                     EXPLVL=round(self.get_exp_to_next_lvl(), 2),
+                     EXP=self.get_exp(),
+                     EXPLVL=self.get_exp_to_next_lvl(),
                      GOLD=self.get_gold(),
                      INV=self.get_inventory(),
                      # ATT_SKL=self.get_attack_skills(),
@@ -523,15 +506,6 @@ class Warrior(Character):
         """
         return (self._maxhp + self.get_hp_modifier()) * self.hp_mult
 
-#   Armour passive getter #
-
-    def get_passive_defence_bonus(self):
-        """
-        Returns warrior's passive defence bonus
-        """
-        hp_percent = math.fabs(self.get_current_hp()/self.get_maxhp())
-        return math.exp(math.sqrt(hp_percent))/math.e
-
 #   Class specific methods modifications #
 
     def add_item(self, item):
@@ -545,20 +519,14 @@ class Warrior(Character):
                 item.set_name('Sword')
             super().add_item(item)
 
-    def get_defence_modifier(self):
-        """
-        Returns character's defence modifier
-        """
-        return (1 / (math.sqrt(self.get_armour()/30 + 1))) * self.get_passive_defence_bonus()
-
-    def get_stats(self):
-        """
-        Returns character's stats in a dictionary
-        """
-        stats = super().get_stats()
-        stats['DEF_BONUS'] = self.get_passive_defence_bonus()
-        stats['HP_BONUS'] = self.hp_mult
-        return stats
+    # def get_stats(self):
+    #     """
+    #     Returns character's stats in a dictionary
+    #     """
+    #     stats = super().get_stats()
+    #     stats['DEF_BONUS'] = self.get_passive_defence_bonus()
+    #     stats['HP_BONUS'] = self.hp_mult
+    #     return stats
 
 
 class Rogue(Character):

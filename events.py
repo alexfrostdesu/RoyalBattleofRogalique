@@ -50,6 +50,10 @@ class StatusMessage:
     def __init__(self, character):
         self._character = character
         self._stats = self._character.get_stats()
+        for stat in self._stats:
+            for k, v in stat.items():
+                if type(v) is float:
+                    stat[k] = round(v, 2)
 
     def stats_message(self):
         msg = f"*{self._stats['CLS']}'s stats:*\n" \

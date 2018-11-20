@@ -65,6 +65,13 @@ class Skill:
         """
         self._owner_stats = character.get_stats()
 
+    def reset(self):
+        """
+        Resets skill to its default state
+        Does nothing for this spell
+        """
+        pass
+
 # Attack Skills #
 
 
@@ -87,7 +94,7 @@ class Fireball(Skill):
         self.set_current_cd(self.get_cooldown_timer())
         output = DialogMessage('used_skill_C',
                                {'char': self.get_owner_stats()['CLS'], 'skill': self.get_name()}).get_message() + "\n"
-        output += target.take_damage_from(self.get_damage(), self.get_owner_stats()['CLS'])
+        output += target.take_damage(self.get_damage(), self.get_owner_stats()['CLS'])
         return output
 
 
@@ -172,7 +179,7 @@ class CriticalStrike(Skill):
         """
         output = DialogMessage('crit',
                                {'char': self.get_owner_stats()['CLS'], 'skill': self.get_name()}).get_message() + "\n"
-        output += target.take_damage_from(self.get_damage(), self.get_owner_stats()['CLS'])
+        output += target.take_damage(self.get_damage(), self.get_owner_stats()['CLS'])
         return output
 
 
@@ -253,12 +260,6 @@ class Evasion(Skill):
         """
         return self._leftoverdamage
 
-    def reset(self):
-        """
-        Does nothing for this spell
-        """
-        pass
-
     def get_evasion_chance(self):
         """
         Returns spell's evasion chance
@@ -281,9 +282,46 @@ class Evasion(Skill):
         """
         return random.random() < self.get_evasion_chance()
 
-    def use_skill(self, damage, attacker):
+    def use_skill(self, damage, attacker=None):
         """
         Evades attack
         Prints message about that attack
         """
         return DialogMessage('evaded_CA', {'char': self.get_owner_stats()['CLS'], 'amount': damage}).get_message() + "\n"
+
+
+class WarriorBlood(Skill):
+    def __init__(self, character):
+        super().__init__(character)
+        self._name = 'Warrior Blood'
+        self._leftoverdamage = 0
+        self._defence_bonus = self.get_defence_bonus()
+
+    def get_leftoverdamage(self):
+        """
+        Returns leftover damage
+        """
+        return self._leftoverdamage
+
+    def get_defence_bonus(self):
+        """
+        Returns defence bonus HP/MaxHP
+        """
+        hp_bonus = (self.get_owner_stats()['HP']/self.get_owner_stats()['MAX_HP'])/100
+        return math.sqrt(hp_bonus)
+
+    def update_skill(self, character):
+        """
+        Updates skill stats
+        """
+        super().update_skill(character)
+        self._leftoverdamage = 0
+
+    def use_skill(self, damage, attacker=None):
+        """
+        Takes damage and reduces it by defence bonus
+        """
+        self._leftoverdamage = damage * (1 - self.get_defence_bonus())
+        print(damage, self._leftoverdamage)
+        return ''
+
