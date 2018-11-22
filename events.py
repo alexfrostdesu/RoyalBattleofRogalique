@@ -21,7 +21,8 @@ class DialogMessage:
         if self._character != '' or self._item != '':
             action_messages = dict(
                 attack_CAT=f"*{self._character}* attacked *{self._target}* for *{self._amount} HP* damage!",
-                attack_pure_CAT=f"*{self._target}* received *{self._amount}* pure damage to HP!",
+                attack_magic_CAT=f"*{self._character}* attacked *{self._target}* for *{self._amount} magic* damage!",
+                attack_pure_CAT=f"*{self._target}* received *{self._amount} pure* damage!",
                 attack_es_CAT=f"*{self._character}* attacked *{self._target}* for *{self._amount} ES* damage!",
                 used_skill_C=f"*{self._character}* used {self._skill}!",
                 broke_es_C=f"*{self._character}*'s Energy Shield is destroyed!",

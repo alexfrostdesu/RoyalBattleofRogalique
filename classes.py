@@ -286,52 +286,36 @@ class Character:
         """
         self._defence_skills.append(skill)
 
-    def check_attack_skills(self, target):
-        """
-        Checks if any of attack skills are ready to use and uses the first one
-        """
-        for skill in self.get_attack_skills():
-            if skill.is_available():
-                skill.update_skill(self)
-                output = skill.use_skill(target)
-                return output
-            else:
-                skill.set_current_cd(skill.get_current_cd() - 1)
-
     def check_defence_skills(self, damage, attacker):
         """
         Checks if any of defence skills are ready to use and uses the first one
         """
-        output = ''
+        log = ''
         for skill in self.get_defence_skills():
             if skill.is_available():
                 skill.update_skill(self)
-                output = skill.use_skill(damage, attacker)
+                log += skill.use_skill(damage, attacker)
                 damage = skill.get_leftoverdamage()
+                # skill.reset()
                 if damage == 0:
                     break
             else:
                 skill.set_current_cd(skill.get_current_cd() - 1)
-        if damage > 0:
-            output += self.take_damage_from(damage, attacker)
-            return output
-        else:
-            return output
+        return damage, log
 
-
-    def update_attack_skills(self):
+    def update_skills(self):
         """
         Updates each attack skill with current character's stats
         """
-        for skill in self.get_attack_skills():
+        for skill in self.get_attack_skills() + self.get_defence_skills():
             skill.update_skill(self)
 
-    def update_defence_skills(self):
-        """
-        Updates each defence skill with current character's stats
-        """
-        for skill in self.get_defence_skills():
-            skill.update_skill(self)
+    # def update_defence_skills(self):
+    #     """
+    #     Updates each defence skill with current character's stats
+    #     """
+    #     for skill in self.get_defence_skills():
+    #         skill.update_skill(self)
 
     def reset_skills(self):
         """
@@ -339,8 +323,8 @@ class Character:
         """
         for skill in self.get_defence_skills():
             skill.reset()
-        for skill in self.get_attack_skills():
-            skill.reset()
+        # for skill in self.get_attack_skills():
+        #     skill.reset()
 
     def get_passives(self):
         """
@@ -358,40 +342,64 @@ class Character:
 
 #   Attacking and taking damage #
 
-    def take_damage(self, damage, attacker):
-        """
-        Takes damage from attacker with defence skills check
-        """
-        return self.check_defence_skills(damage, attacker)
+# Damage types: ['Normal', 'Magic', 'Pure']
+# Normal - resisted by armor, does not go through defence skills
+# Magic - not resisted by armor, does not go through defence skills
+# Pure - not resisted by armor, goes through defence skills
 
-    def take_damage_from(self, damage, attacker):
+    def take_damage_magic(self, damage, attacker):
         """
-        Takes damage from attacker without defence skills check
-        Prints message about that attack
+        Takes magic damage
         """
-        self._hp -= damage * self.get_defence_modifier()
-        output = DialogMessage('attack_CAT', {'char': attacker, 'amount': damage * self.get_defence_modifier(),
-                                              'target': self.get_class()}).get_message() + "\n"
-        return output
+        leftoverdamage, log = self.check_defence_skills(damage, attacker)
+        if leftoverdamage > 0:
+            self._hp -= leftoverdamage
+            log += DialogMessage('attack_magic_CAT', {'char': attacker, 'amount': leftoverdamage,
+                                                      'target': self.get_class()}).get_message() + "\n"
+        return log
+
+    def take_damage_normal(self, damage, attacker):
+        """
+        Takes normal damage
+        """
+        leftoverdamage, log = self.check_defence_skills(damage, attacker)
+        if leftoverdamage > 0:
+            self._hp -= leftoverdamage * self.get_defence_modifier()
+            log += DialogMessage('attack_CAT', {'char': attacker, 'amount': leftoverdamage * self.get_defence_modifier(),
+                                                'target': self.get_class()}).get_message() + "\n"
+        return log
 
     def take_damage_pure(self, damage, attacker):
         """
-        Takes pure damage from skills
+        Takes pure damage
         """
         self._hp -= damage
-        output = DialogMessage('attack_pure_CAT', {'char': attacker, 'amount': damage, 'target': self.get_class()}).get_message() + "\n"
+        output = DialogMessage('attack_pure_CAT', {'char': attacker, 'amount': damage,
+                                                   'target': self.get_class()}).get_message() + "\n"
         return output
 
     def attack(self, target):
         """
         Reduces other character's hp by self's attack
         """
-        output = self.check_attack_skills(target)
-        if output is not None:
-            return output
-        else:
+        output = None
+        log = ''
+        for skill in self.get_attack_skills():
+            if skill.is_available():
+                skill.update_skill(self)
+                log += skill.use_skill()
+                output = skill.get_damage()
+                break
+            else:
+                skill.set_current_cd(skill.get_current_cd() - 1)
+        if output is None:
             attack = self.get_attack() * self.get_attack_modifier()
-            return target.take_damage(attack, self.get_class())
+            output = {'Damage': attack, 'Type': 'Normal'}
+        damage_types = {'Normal': target.take_damage_normal,
+                        'Magic': target.take_damage_magic,
+                        'Pure': target.take_damage_pure}
+        log += damage_types[output['Type']](output['Damage'], self.get_class())
+        return log
 
 #   Getting character's stats #
 

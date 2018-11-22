@@ -56,6 +56,7 @@ class Skill:
     def is_available(self):
         """
         Returns if spell is ready to use
+        Default check is cooldown == 0
         """
         return self._current_cd == 0
 
@@ -65,71 +66,105 @@ class Skill:
         """
         self._owner_stats = character.get_stats()
 
-    def reset(self):
+    def get_stats(self):
         """
-        Resets skill to its default state
-        Does nothing for this spell
+        Gets skill's stats
         """
-        pass
+        msg = f"*{self._name}'s stats:*\n"
+        return msg
+
 
 # Attack Skills #
 
+# Damage types: ['Normal', 'Magic', 'Pure']
+# Normal - resisted by armor, does not go through defence skills
+# Magic - not resisted by armor, does not go through defence skills
+# Pure - not resisted by armor, goes through defence skills
 
-class Fireball(Skill):
+
+class AttackSkill(Skill):
+    def __init__(self, character):
+        super().__init__(character)
+        self._name = 'AttackSkill'
+        self._type = 'Magic'  # default type for skills
+
+    def _damage(self):
+        """
+        Returns spell's damage
+        """
+        return 0
+
+    def get_type(self):
+        """
+        Returns spell's type
+        """
+        return self._type
+
+    def get_damage(self):
+        """
+        Returns spell's damage and type
+        """
+        damage = {'Damage': self._damage(), 'Type': self._type}
+        return damage
+
+    def use_skill(self):
+        """
+        Used AttackSkill
+        Returns message about it
+        """
+        self.set_current_cd(self.get_cooldown_timer())
+        output = DialogMessage('used_skill_C',
+                               {'char': self.get_owner_stats()['CLS'], 'skill': self.get_name()}).get_message() + "\n"
+        return output
+
+    def get_stats(self):
+        """
+        Gets skill's stats
+        """
+        msg = super().get_stats()
+        msg += f"`Damage     |  {self._damage():0.1f}`\n" \
+               f"`Cooldown   |  {self.get_cooldown_timer()}`\n" \
+               f"`Type       |  {self.get_type()}`\n"
+        return msg
+
+
+class Fireball(AttackSkill):
     def __init__(self, character):
         super().__init__(character)
         self._name = 'Fireball'
         self._cooldown = 4
 
-    def get_damage(self):
+    def _damage(self):
         """
         Returns spell's damage
         """
         return self.get_owner_stats()['MP'] * 1.5
 
-    def use_skill(self, target):
-        """
-        Use Fireball on target
-        """
-        self.set_current_cd(self.get_cooldown_timer())
-        output = DialogMessage('used_skill_C',
-                               {'char': self.get_owner_stats()['CLS'], 'skill': self.get_name()}).get_message() + "\n"
-        output += target.take_damage(self.get_damage(), self.get_owner_stats()['CLS'])
-        return output
 
-
-class VoidStrike(Skill):
+class VoidStrike(AttackSkill):
     def __init__(self, character):
         super().__init__(character)
         self._name = 'Void Strike'
         self._cooldown = 3
+        self._type = 'Pure'
 
-    def get_damage(self):
+    def _damage(self):
         """
         Returns spell's damage
         """
         return self._owner_stats['ATT']
 
-    def use_skill(self, target):
-        """
-        Use VoidStrike on target
-        """
-        self.set_current_cd(self.get_cooldown_timer())
-        output = DialogMessage('used_skill_C',
-                               {'char': self.get_owner_stats()['CLS'], 'skill': self.get_name()}).get_message() + "\n"
-        output += target.take_damage_pure(self.get_damage(), self.get_owner_stats()['CLS'])
-        return output
 
-
-class CriticalStrike(Skill):
+class CriticalStrike(AttackSkill):
     def __init__(self, character):
         super().__init__(character)
         self._name = 'Critical Strike'
+        self._type = 'Normal'
         self._crit_mult = 2
         self._crit_chance = 0.15
         self._cooldown = 0
 
-    def get_damage(self):
+    def _damage(self):
         """
         Returns spell's damage
         """
@@ -173,25 +208,49 @@ class CriticalStrike(Skill):
         """
         return random.random() < self.get_crit_chance()
 
-    def use_skill(self, target):
+    def get_stats(self):
         """
-        Use critical strike on target
+        Gets skill's stats
         """
-        output = DialogMessage('crit',
-                               {'char': self.get_owner_stats()['CLS'], 'skill': self.get_name()}).get_message() + "\n"
-        output += target.take_damage(self.get_damage(), self.get_owner_stats()['CLS'])
-        return output
+        msg = super().get_stats()
+        msg += f"`Crit Dmg   |  {self.get_crit_mult()}x`\n" \
+               f"`Crit Chance|  {self.get_crit_chance() * 100:0.1f}%`\n"
+        return msg
 
 
 # Defence Skills #
 
+class DefenceSkill(Skill):
+    def __init__(self, character):
+        super().__init__(character)
+        self._name = 'DefenceSkill'
+        self._leftoverdamage = 0
 
-class EnergyShield(Skill):
+    def get_leftoverdamage(self):
+        """
+        Returns leftover damage
+        """
+        return self._leftoverdamage
+
+    def reset(self):
+        """
+        Resets skill to its default state
+        Does nothing for this spell
+        """
+        self._leftoverdamage = 0
+
+    def use_skill(self, damage, attacker):
+        """
+        Takes other character's attack and reduces self es or/and hp by it
+        """
+        self.set_current_cd(self.get_cooldown_timer())
+
+
+class EnergyShield(DefenceSkill):
     def __init__(self, character):
         super().__init__(character)
         self._es = self.get_max_es()
         self._name = 'Energy Shield'
-        self._leftoverdamage = 0
 
     def get_max_es(self):
         """
@@ -205,16 +264,11 @@ class EnergyShield(Skill):
         """
         return self._es
 
-    def get_leftoverdamage(self):
-        """
-        Returns leftover damage
-        """
-        return self._leftoverdamage
-
     def reset(self):
         """
         Resets es meter to character's mp
         """
+        super().reset()
         self._es = self.get_max_es()
 
     def is_available(self):
@@ -246,19 +300,22 @@ class EnergyShield(Skill):
                                                        'target': self.get_owner_stats()['CLS']}).get_message() + "\n" + \
                        DialogMessage('broke_es_C', {'char': self.get_owner_stats()['CLS']}).get_message() + "\n"
 
+    def get_stats(self):
+        """
+        Gets skill's stats
+        """
+        msg = super().get_stats()
+        msg += f"`Current ES |  {self.get_es():0.1f}`\n" \
+               f"`Max ES     |  {self.get_max_es():0.1f}`\n"
+        return msg
 
-class Evasion(Skill):
+
+class Evasion(DefenceSkill):
     def __init__(self, character):
         super().__init__(character)
         self._name = 'Evasion'
         self._evasion_chance = 0.15
         self._leftoverdamage = 0
-
-    def get_leftoverdamage(self):
-        """
-        Returns leftover damage
-        """
-        return self._leftoverdamage
 
     def get_evasion_chance(self):
         """
@@ -282,46 +339,62 @@ class Evasion(Skill):
         """
         return random.random() < self.get_evasion_chance()
 
-    def use_skill(self, damage, attacker=None):
+    def use_skill(self, damage, attacker):
         """
         Evades attack
         Prints message about that attack
         """
-        return DialogMessage('evaded_CA', {'char': self.get_owner_stats()['CLS'], 'amount': damage}).get_message() + "\n"
+        super().use_skill(damage, attacker)
+        return DialogMessage('evaded_CA', {'char': self.get_owner_stats()['CLS'],
+                                           'amount': damage}).get_message() + "\n"
+
+    def get_stats(self):
+        """
+        Gets skill's stats
+        """
+        msg = super().get_stats()
+        msg += f"`EV Chance  |  {self.get_evasion_chance() * 100:0.1f}%`\n"
+        return msg
 
 
-class WarriorBlood(Skill):
+class WarriorBlood(DefenceSkill):
     def __init__(self, character):
         super().__init__(character)
         self._name = 'Warrior Blood'
         self._leftoverdamage = 0
+        self._max_bonus = 0.5
         self._defence_bonus = self.get_defence_bonus()
-
-    def get_leftoverdamage(self):
-        """
-        Returns leftover damage
-        """
-        return self._leftoverdamage
 
     def get_defence_bonus(self):
         """
         Returns defence bonus HP/MaxHP
         """
-        hp_bonus = (self.get_owner_stats()['HP']/self.get_owner_stats()['MAX_HP'])/100
-        return math.sqrt(hp_bonus)
+        hp_bonus = math.sqrt(self.get_owner_stats()['HP']/self.get_owner_stats()['MAX_HP'])
+        if hp_bonus < self._max_bonus:
+            hp_bonus = self._max_bonus
+        return hp_bonus
 
     def update_skill(self, character):
         """
         Updates skill stats
         """
         super().update_skill(character)
-        self._leftoverdamage = 0
+        self.reset()
 
     def use_skill(self, damage, attacker=None):
         """
         Takes damage and reduces it by defence bonus
         """
-        self._leftoverdamage = damage * (1 - self.get_defence_bonus())
-        print(damage, self._leftoverdamage)
+        self._leftoverdamage = damage * self.get_defence_bonus()
+        # print(damage, self._leftoverdamage)
         return ''
+
+    def get_stats(self):
+        """
+        Gets skill's stats
+        """
+        msg = super().get_stats()
+        msg += f"`Max Bonus     |  {self._max_bonus * 100:0.1f}%`\n" \
+               f"`Current Bonus |  {(1 - self.get_defence_bonus()) * 100:0.1f}%`\n"
+        return msg
 
