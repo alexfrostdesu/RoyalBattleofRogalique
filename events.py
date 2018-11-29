@@ -15,7 +15,7 @@ class DialogMessage:
             start_game="*Select your character*:\n" + "```\nMage \nWarrior \nRogue```",
             base="Do you want to go and kill some monsters? *(Y/I/S)*\n" + "```\nY - Go and find some monsters \nI - Show inventory \nS - Show stats \nB - Go to shop```",
             attack_enemy="Do you want to attack? *(Y/N)*\n" + "```\nY - Attack the enemy \nN - Retreat to base```",
-            end_game="Your adventure ends here.\nType /start to start new game.",
+            end_game="Your adventure ends here.",
             dead="Your character is dead.",
             equip_item="Would you like to equip item? *(E/N)*\n" + "```\nE - Equip Item \nN - Discard Item```")
         if self._character != '' or self._item != '':
