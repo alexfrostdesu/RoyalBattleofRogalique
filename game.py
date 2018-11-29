@@ -498,10 +498,12 @@ class GameManager():
     def start_new_game(self, chat_id, player_id):
         """Starts a new game, and returns appropriate messages"""
         self.user_list[player_id] = Game(chat_id, player_id)
+        keyboard = json.dumps(
+             {'keyboard': [['Mage', 'Warrior', 'Rogue']], 'one_time_keyboard': False, 'resize_keyboard': True})
         return [OutMessage(
             'Ready Player One', chat_id, player_id),
             OutMessage(DialogMessage(
-                'start_game').get_message(), chat_id, player_id)]
+                'start_game').get_message(), chat_id, player_id, keyboard)]
 
     def restart_game(self, chat_id, player_id):
         """Restarts a game"""
@@ -512,14 +514,14 @@ class GameManager():
         """Processes all the commands outside of game"""
         if content in self.commands_out_game.keys():
             return self.commands_out_game[content](chat_id, player_id)
-        else: 
+        else:
             return self.invalid_input(chat_id, player_id)
 
     def process_in_game_commands(self, chat_id, player_id, content):
         "Process all the ingame commands"
         if content in self.commands_in_game.keys():
             return self.commands_in_game[content](chat_id, player_id)
-        else: 
+        else:
             return []
 
     def process_commands(self, chat_id, player_id, content):
