@@ -70,10 +70,10 @@ class StatusMessage:
             msg += f"`EV      |  {self._stats['EV_CHANCE'] * 100:0.1f}%`\n"
         if self._stats.get('CRIT_CHANCE'):
             msg += f"`Crit    |  {self._stats['CRIT_CHANCE'] * 100:0.1f}%`\n"
-        if self._stats.get('PASSIVES'):
-            msg += f"Passive skills:\n"
-            for passive in self._stats['PASSIVES']:
-                msg += f"`{passive}`\n"
+        if self._character.get_all_skills():
+            msg += f"Skills:\n"
+            for skill in self._character.get_all_skills():
+                msg += f"`{skill.get_name()}`\n"
         return msg
 
     def inventory_message(self):
@@ -100,4 +100,12 @@ class StatusMessage:
                 "`A  -  Attack boost:  1000 gold` \n" \
                 "`M  -  MP boost:      1000 gold` \n" \
                 "Type *E* to exit shop"
+        return msg
+
+    def skills_message(self):
+        skills = self._character.get_all_skills()
+        msg = "Your character's skills: \n"
+        for skill in skills:
+            msg += "\n"
+            msg += skill.get_stats()
         return msg

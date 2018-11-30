@@ -116,6 +116,12 @@ class Character:
         """
         self._gold = gold
 
+    def spend_gold(self, amount):
+        """
+        Subtracts an amount from character's gold
+        """
+        self._gold = self._gold - amount
+
 #   Attack getters and setters #
 
     def get_attack_stat(self):
@@ -222,6 +228,8 @@ class Character:
         self._mp += 1
         self._attack += 1
         self._exp = 0
+        self.reset_skills()
+        self.update_skills()
 
 #   Items and inventory #
 
@@ -234,6 +242,7 @@ class Character:
         else:
             self._inventory[item.get_type()] = item
             self.recalculate_item_bonus()
+            self.update_skills()
 
     def get_inventory(self):
         """
@@ -274,6 +283,12 @@ class Character:
         """
         return self._defence_skills
 
+    def get_all_skills(self):
+        """
+        Returns all character's skills
+        """
+        return self.get_attack_skills() + self.get_defence_skills()
+
     def add_attack_skill(self, skill):
         """
         Adds attack skill to character
@@ -310,21 +325,12 @@ class Character:
         for skill in self.get_attack_skills() + self.get_defence_skills():
             skill.update_skill(self)
 
-    # def update_defence_skills(self):
-    #     """
-    #     Updates each defence skill with current character's stats
-    #     """
-    #     for skill in self.get_defence_skills():
-    #         skill.update_skill(self)
-
     def reset_skills(self):
         """
         Resets each defence skill to default state
         """
         for skill in self.get_defence_skills():
             skill.reset()
-        # for skill in self.get_attack_skills():
-        #     skill.reset()
 
     def get_passives(self):
         """
@@ -497,6 +503,7 @@ class Warrior(Character):
         super().__init__()
         self._cls = 'Warrior'
         self._hp = self.get_maxhp()
+        self.add_defence_skill(WarriorBlood(self))
         self._passives['Warrior Blood'] = "This passive adds Warrior additional defence for every missing HP.\n"
         self._passives['Great Health'] = "This passive adds additional defence for Warrior.\n"
 

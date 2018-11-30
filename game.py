@@ -38,15 +38,23 @@ class Game:
         Setting game state to another value
         """
         self._game_state = state
-        self._keyboard = json.dumps(
-             {'keyboard': [self.get_state_input()], 'one_time_keyboard': False, 'resize_keyboard': True})
+        _keyboard = []
+        _buttons = self.get_state_input()
+        if _buttons:
+            length = len(_buttons)
+            if length > 4:
+                for i in range(length // 4):
+                    _keyboard.append(_buttons[:4])
+                    _buttons = _buttons[4:]
+            _keyboard.append(_buttons)
+        self._keyboard = json.dumps({'keyboard': _keyboard, 'one_time_keyboard': False, 'resize_keyboard': True})
 
     @functools.lru_cache(8)
     def get_game_states(self):
         return {'Game Start':{"func": self.game_start,
                               "input": ['Mage', 'Warrior', 'Rogue']},
             'Base':          {"func": self.base,
-                              "input": ['Shop', 'Stats', 'Inventory', 'Find Monsters']},
+                              "input": ['Shop', 'Stats', 'Skills', 'Inventory', 'Find Monsters']},
             'Battle':        {"func": self.battle,
                               "input": None},
             'Battle Won':    {"func": self.won_battle,
@@ -112,6 +120,13 @@ class Game:
         _inventory = StatusMessage(char).inventory_message()
         self.enqueue_message(_inventory, self._chat_id, self._player_id)
 
+    def send_skills(self, char):
+        """
+        Shows the skills message
+        """
+        _skills = StatusMessage(char).skills_message()
+        self.enqueue_message(_skills, self._chat_id, self._player_id)
+
     def roll(self, number):
         roll = random.randint(1, 6)
         return roll >= number
@@ -157,6 +172,10 @@ class Game:
                 self.send_inventory(self.playerchar)
                 self.enqueue_message(DialogMessage(
                     'base').get_message(), self._chat_id, self._player_id, self._keyboard)
+            elif message == 'Skills':
+                self.send_skills(self.playerchar)
+                self.enqueue_message(DialogMessage(
+                    'base').get_message(), self._chat_id, self._player_id, self._keyboard)
             elif message == 'Find Monsters':
                 self.set_state('Battle Choice')
                 self.create_battle()
@@ -177,7 +196,7 @@ class Game:
                 hp = int(self.playerchar.get_maxhp() -
                          self.playerchar.get_current_hp())
                 if self.playerchar.get_gold() >= hp:
-                    self.playerchar.set_gold(self.playerchar.get_gold() - hp)
+                    self.playerchar.spend_gold(hp)
                     self.playerchar.set_hp(self.playerchar.get_maxhp())
                     self.enqueue_message(
                         'HP restored', self._chat_id, self._player_id, self._keyboard)
@@ -186,7 +205,7 @@ class Game:
                     self.enqueue_message('Not enough gold', self._chat_id, self._player_id, self._keyboard)
             if message == 'Small Potion':
                 if self.playerchar.get_gold() >= 10:
-                    self.playerchar.set_gold(self.playerchar.get_gold() - 10)
+                    self.playerchar.spend_gold(10)
                     self.playerchar.set_hp(self.playerchar.get_current_hp() + 10)
                     self.enqueue_message(
                         'HP restored', self._chat_id, self._player_id, self._keyboard)
@@ -195,7 +214,7 @@ class Game:
                     self.enqueue_message('Not enough gold', self._chat_id, self._player_id, self._keyboard)
             if message == 'Medium Potion':
                 if self.playerchar.get_gold() >= 100:
-                    self.playerchar.set_gold(self.playerchar.get_gold() - 100)
+                    self.playerchar.spend_gold(100)
                     self.playerchar.set_hp(self.playerchar.get_current_hp() + 100)
                     self.enqueue_message(
                         'HP restored', self._chat_id, self._player_id, self._keyboard)
@@ -204,7 +223,7 @@ class Game:
                     self.enqueue_message('Not enough gold', self._chat_id, self._player_id, self._keyboard)
             if message == 'Attack Boost':
                 if self.playerchar.get_gold() >= 1000:
-                    self.playerchar.set_gold(self.playerchar.get_gold() - 1000)
+                    self.playerchar.spend_gold(1000)
                     self.playerchar.set_attack(self.playerchar._attack + 10)
                     self.enqueue_message(
                         'Attack Boosted', self._chat_id, self._player_id, self._keyboard)
@@ -214,7 +233,7 @@ class Game:
                         'Not enough gold', self._chat_id, self._player_id, self._keyboard)
             if message == 'Magic Boost':
                 if self.playerchar.get_gold() >= 1000:
-                    self.playerchar.set_gold(self.playerchar.get_gold() - 1000)
+                    self.playerchar.spend_gold(1000)
                     self.enqueue_message(
                         'MP Boosted', self._chat_id, self._player_id, self._keyboard)
                     self.send_stats(self.playerchar)
