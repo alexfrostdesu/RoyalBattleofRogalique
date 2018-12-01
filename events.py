@@ -1,23 +1,13 @@
 class DialogMessage:
-    def __init__(self, code, object=None, amount=-1, target=None):
+    def __init__(self, code, params={}):
         self._code = code
-        self._character = ''
-        self._skill = ''
-        self._item = ''
-        self._amount = 0
-        self._target = ''
-        if object is not None and (
-                object.get_character() or object.__class__.__bases__[0].__name__ in ('Character', 'Monster')):
-            self._character = object.get_class()
-            if object.is_skill_available():
-                self._skill = object.first_available_skill().get_name()
-        elif object.__class__.__name__ == 'Item' or object.__class__.__bases__[0].__name__ == 'Item':
-            self._item = object.get_full_name()
-        if amount >= 0:
-            self._amount = str(round(amount, 1))
-        if target is not None and (
-                target.get_character() or target.__class__.__bases__[0].__name__ in ('Character', 'Monster')):
-            self._target = target.get_class()
+        self._character = params.get('char')
+        self._skill = params.get('skill')
+        self._item = params.get('item')
+        self._amount = params.get('amount')
+        self._target = params.get('target')
+        if self._amount is not None:
+            self._amount = str(round(self._amount, 1))
 
     def get_message(self):
         messages = dict(
@@ -25,18 +15,19 @@ class DialogMessage:
             start_game="*Select your character*:\n" + "```\nMage \nWarrior \nRogue```",
             base="Do you want to go and kill some monsters? *(Y/I/S)*\n" + "```\nY - Go and find some monsters \nI - Show inventory \nS - Show stats \nB - Go to shop```",
             attack_enemy="Do you want to attack? *(Y/N)*\n" + "```\nY - Attack the enemy \nN - Retreat to base```",
-            end_game="Your adventure ends here.\nType /start to start new game.",
+            end_game="Your adventure ends here.",
             dead="Your character is dead.",
             equip_item="Would you like to equip item? *(E/N)*\n" + "```\nE - Equip Item \nN - Discard Item```")
         if self._character != '' or self._item != '':
             action_messages = dict(
                 attack_CAT=f"*{self._character}* attacked *{self._target}* for *{self._amount} HP* damage!",
-                attack_pure_CAT=f"That damaged *{self._target}* for *{self._amount} HP*!",
+                attack_magic_CAT=f"*{self._character}* attacked *{self._target}* for *{self._amount} magic* damage!",
+                attack_pure_CAT=f"*{self._target}* received *{self._amount} pure* damage!",
                 attack_es_CAT=f"*{self._character}* attacked *{self._target}* for *{self._amount} ES* damage!",
                 used_skill_C=f"*{self._character}* used {self._skill}!",
                 broke_es_C=f"*{self._character}*'s Energy Shield is destroyed!",
                 broke_es_dmg_hp_CAT=f"*{self._character}* broke *{self._target}*'s Energy Shield, while also dealing *{self._amount}* HP damage!",
-                evaded_CA=f"{self._character} evaded {self._amount} damage!",
+                evaded_CA=f"*{self._character}* evaded *{self._amount}* damage!",
                 crit="Critical hit!",
                 lvlup_CA=f"*{self._character}* got a level up! Your level is now {self._amount}\n",
                 healed_CA=f"{self._character} was healed for {self._amount} HP",
@@ -60,6 +51,9 @@ class StatusMessage:
     def __init__(self, character):
         self._character = character
         self._stats = self._character.get_stats()
+        for stat in self._stats:
+            if stat is float:
+                stat = round(stat, 2)
 
     def stats_message(self):
         msg = f"*{self._stats['CLS']}'s stats:*\n" \
@@ -76,10 +70,10 @@ class StatusMessage:
             msg += f"`EV      |  {self._stats['EV_CHANCE'] * 100:0.1f}%`\n"
         if self._stats.get('CRIT_CHANCE'):
             msg += f"`Crit    |  {self._stats['CRIT_CHANCE'] * 100:0.1f}%`\n"
-        if self._stats.get('PASSIVES'):
-            msg += f"Passive skills:\n"
-            for passive in self._stats['PASSIVES']:
-                msg += f"`{passive}`\n"
+        if self._character.get_all_skills():
+            msg += f"Skills:\n"
+            for skill in self._character.get_all_skills():
+                msg += f"`{skill.get_name()}`\n"
         return msg
 
     def inventory_message(self):
@@ -106,4 +100,12 @@ class StatusMessage:
                 "`A  -  Attack boost:  1000 gold` \n" \
                 "`M  -  MP boost:      1000 gold` \n" \
                 "Type *E* to exit shop"
+        return msg
+
+    def skills_message(self):
+        skills = self._character.get_all_skills()
+        msg = "Your character's skills: \n"
+        for skill in skills:
+            msg += "\n"
+            msg += skill.get_stats()
         return msg
