@@ -30,7 +30,7 @@ class DialogMessage:
                 evaded_CA=f"*{self._character}* evaded *{self._amount}* damage!",
                 crit="Critical hit!",
                 lvlup_CA=f"*{self._character}* got a level up! Your level is now {self._amount}\n",
-                healed_CA=f"{self._character} was healed for {self._amount} HP",
+                healed_CA=f"{self._character} was healed for a {self._amount} HP",
                 won_C=f"{self._character} has won the battle!",
                 lost_C=f"{self._character} has lost the battle!",
                 dead_C=f"{self._character} is dead.",

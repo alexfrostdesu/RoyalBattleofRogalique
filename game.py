@@ -360,15 +360,14 @@ class Game:
         Rolling for items and applying them to the character
         """
         # healing potion in a dire need of rewrite
-        if random.randint(1, 7) % 6 == 0:
+        if self.roll(5):
             hp = 'Healing Potion'
             item_healing = random.randint(10, int(enemies[0].get_maxhp()))
             self.enqueue_message(f"You found a *{hp}*!\n" +
                                  DialogMessage(
                                      'healed_CA', {'char': self.playerchar.get_class(), 'amount': item_healing}).get_message(),
                                  self._chat_id, self._player_id)
-            self.playerchar.set_hp(
-                self.playerchar.get_current_hp() + item_healing)
+            self.playerchar.heal(item_healing)
 
         #   Lazy copypaste 2 lines at a time #
 

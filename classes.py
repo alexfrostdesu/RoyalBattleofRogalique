@@ -64,6 +64,7 @@ class Character:
     def set_hp(self, hp):
         """
         Takes new value for character's hp and sets it
+        Can't be higher than maxhp
         """
         if 0 < hp <= self.get_maxhp():
             self._hp = hp
@@ -380,9 +381,9 @@ class Character:
         Takes pure damage
         """
         self._hp -= damage
-        output = DialogMessage('attack_pure_CAT', {'char': attacker, 'amount': damage,
-                                                   'target': self.get_class()}).get_message() + "\n"
-        return output
+        log = DialogMessage('attack_pure_CAT', {'char': attacker, 'amount': damage,
+                                                'target': self.get_class()}).get_message() + "\n"
+        return log
 
     def attack(self, target):
         """
@@ -407,6 +408,14 @@ class Character:
         log += damage_types[output['Type']](output['Damage'], self.get_class())
         return log
 
+#   Healing #
+
+    def heal(self, amount):
+        """
+        Heals character for amount hp
+        """
+        self.set_hp(self.get_current_hp() + amount)
+
 #   Getting character's stats #
 
     def get_stats(self):
@@ -425,8 +434,6 @@ class Character:
                      EXPLVL=self.get_exp_to_next_lvl(),
                      GOLD=self.get_gold(),
                      INV=self.get_inventory(),
-                     # ATT_SKL=self.get_attack_skills(),
-                     # DEF_SKL=self.get_defence_skills(),
                      PASSIVES=self.get_passives())
         return stats
 

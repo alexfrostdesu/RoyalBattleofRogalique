@@ -1,5 +1,6 @@
 import random
 
+
 class Item:
     _character = False
 
@@ -132,16 +133,19 @@ class Item:
 
 
 class CommonItem(Item):
-    def __init__(self, lvl):
+    def __init__(self, lvl, item_type=None):
         player_lvl_bonus = random.randint(1, lvl)
         #                     ATTACK || HP || MP || DEFENSE
         self._item_dict = {'Armour': (0, 10, 2, 5 + player_lvl_bonus),
-                     'Weapon': (5 + player_lvl_bonus, 0, 2, 0),
-                     'Helm': (0, 5, 2, 5),
-                     'Boots': (0, 10, 2, 2),
-                     'Ring': (5, 20, 5, 0)
+                           'Weapon': (5 + player_lvl_bonus, 0, 2, 0),
+                           'Helm': (0, 5, 2, 5),
+                           'Boots': (0, 10, 2, 2),
+                           'Ring': (5, 20, 5, 0)
                            }
-        self._type = random.choice(list(self._item_dict))
+        if item_type:
+            self._type = item_type
+        else:
+            self._type = random.choice(list(self._item_dict))
         item_stats = list([random.randint(0, i) for i in self._item_dict[self._type]])
         self._item_affix = ''
         self._rarity = 'Common'
@@ -149,7 +153,7 @@ class CommonItem(Item):
 
 
 class RareItem(Item):
-    def __init__(self, lvl):
+    def __init__(self, lvl, item_type=None):
         player_lvl_bonus = random.randint(0, lvl+5)
         #                     ATTACK || HP || MP || DEFENSE
         self._item_dict = {'Armour': (0, 40, 10, 15 + player_lvl_bonus),
@@ -159,7 +163,10 @@ class RareItem(Item):
                            'Ring': (10, 20, 20, 0)
                            }
         self._affixlist = ['of Damage', 'of Vitality', 'of Magic', 'of Defence', 'of Random']
-        self._type = random.choice(list(self._item_dict))
+        if item_type:
+            self._type = item_type
+        else:
+            self._type = random.choice(list(self._item_dict))
         self._item_affix = random.choice(self._affixlist)
         self._rarity = 'Rare'
         item_stats = list([random.randint(0, i) for i in self._item_dict[self._type]])
