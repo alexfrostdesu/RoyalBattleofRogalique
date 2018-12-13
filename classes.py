@@ -24,7 +24,8 @@ class Character:
         self._inventory = {'Armour': None, 'Weapon': None, 'Helm': None, 'Boots': None, 'Ring': None}
         self._attack_skills = []
         self._defence_skills = []
-        self._passives = {}
+        # self._passives = {}
+        self._summons = []
         self._hp = self._maxhp = self.get_maxhp()
 
 #   Class getters and setters #
@@ -416,6 +417,20 @@ class Character:
         """
         self.set_hp(self.get_current_hp() + amount)
 
+#   Summons #
+
+    def get_summons(self):
+        """
+        Returns character's summons list
+        """
+        return self._summons
+
+    def add_summon(self, summon):
+        """
+        Adds summon to character's summons list
+        """
+        self._summons.append(summon)
+
 #   Getting character's stats #
 
     def get_stats(self):
@@ -433,8 +448,7 @@ class Character:
                      EXP=self.get_exp(),
                      EXPLVL=self.get_exp_to_next_lvl(),
                      GOLD=self.get_gold(),
-                     INV=self.get_inventory(),
-                     PASSIVES=self.get_passives())
+                     INV=self.get_inventory())
         return stats
 
 #   testing used stuff #
@@ -480,8 +494,8 @@ class Mage(Character):
         self._cls = 'Mage'
         self.add_attack_skill(Fireball(self))
         self.add_defence_skill(EnergyShield(self))
-        self._passives['Energy Shield'] = "This passive allows Mage to absorb some of incoming damage.\n" \
-                                          "ES scales with MP and lvl"
+        # self._passives['Energy Shield'] = "This passive allows Mage to absorb some of incoming damage.\n" \
+        #                                   "ES scales with MP and lvl"
 
     def add_item(self, item):
         """
@@ -511,8 +525,8 @@ class Warrior(Character):
         self._cls = 'Warrior'
         self._hp = self.get_maxhp()
         self.add_defence_skill(WarriorBlood(self))
-        self._passives['Warrior Blood'] = "This passive adds Warrior additional defence for every missing HP.\n"
-        self._passives['Great Health'] = "This passive adds additional defence for Warrior.\n"
+        # self._passives['Warrior Blood'] = "This passive adds Warrior additional defence for every missing HP.\n"
+        # self._passives['Great Health'] = "This passive adds additional defence for Warrior.\n"
 
 #   HP modifier, but with passive #
 
@@ -560,10 +574,10 @@ class Rogue(Character):
         self._cls = 'Rogue'
         self.add_attack_skill(CriticalStrike(self))
         self.add_defence_skill(Evasion(self))
-        self._passives['Evasion'] = "This passive allows Rogue to evade some of incoming damage.\n" \
-                                    "EV scales with MP"
-        self._passives['Critical Strike'] = "This passive allows Rogue to double the damage some of his attacks.\n" \
-                                            "Crit chance scales with MP"
+        # self._passives['Evasion'] = "This passive allows Rogue to evade some of incoming damage.\n" \
+        #                             "EV scales with MP"
+        # self._passives['Critical Strike'] = "This passive allows Rogue to double the damage some of his attacks.\n" \
+        #                                     "Crit chance scales with MP"
 
     def add_item(self, item):
         """
@@ -596,6 +610,7 @@ class Monster(Character):
         self._mp = (random.randint(1, 1) * self._lvl_mult)
         self._attack = (random.randint(5, 10) * self._lvl_mult)
         self._armour = 5 * random.uniform(1, 2)
+        self.add_summon(Character())
 
 
 class GreaterMonster(Monster):

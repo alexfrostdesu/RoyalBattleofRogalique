@@ -21,6 +21,7 @@ class OutMessage():
 class Game:
     def __init__(self, chat_id, player_id):
         self._player_id = player_id
+        self._enemy = None
         self._chat_id = chat_id
         self._game_state = 'Game Start'
         self._message_send_list = []
@@ -97,7 +98,7 @@ class Game:
     def process_incoming_message(self, message):
         """
         Takes incoming message
-        processes basen on a game state
+        processes based on a game state
         and returns reply messages
         """
         fnc = self.get_state_function()
@@ -247,13 +248,17 @@ class Game:
 
     def create_battle(self):
         """Creating the enemy list first time"""
-        self.enemies = self.create_enemy_list(self.playerchar.get_lvl())  # creating enemy
-        for target in self.enemies:  # sending info for all enemies
-            self.enqueue_message(DialogMessage(
-                'see_enemy_C', {'char': target.get_class()}).get_message(), self._chat_id, self._player_id, self._keyboard)
-            self.send_stats(target)
-        self.enqueue_message(DialogMessage('attack_enemy').get_message(
-        ), self._chat_id, self._player_id, self._keyboard)  # prompting to attack
+        self._enemy = Monster(self.playerchar.get_lvl())
+        self.enqueue_message(DialogMessage('see_enemy_C', {'char': self._enemy.get_class()}).get_message(),
+                             self._chat_id, self._player_id, self._keyboard)
+        self.send_stats(self._enemy)
+        if self._enemy.get_summons():
+            self.enqueue_message("Enemy summons:",
+                                 self._chat_id, self._player_id, self._keyboard)
+            for summon in self._enemy.get_summons():
+                self.send_stats(summon)
+        self.enqueue_message(DialogMessage('attack_enemy').get_message(),
+                             self._chat_id, self._player_id, self._keyboard)  # prompting to attack
 
     def battle_choice(self, message):
         """
@@ -263,8 +268,8 @@ class Game:
         if message not in self.get_state_input():  # standard check for right input
             self.enqueue_message('Please input correct command',
                                  self._chat_id, self._player_id)
-            self.enqueue_message(DialogMessage(
-                'attack_enemy').get_message(), self._chat_id, self._player_id, self._keyboard)
+            self.enqueue_message(DialogMessage('attack_enemy').get_message(),
+                                 self._chat_id, self._player_id, self._keyboard)
         else:
             if message == 'Attack':
                 self.set_state('Battle')
@@ -275,7 +280,7 @@ class Game:
                 self.playerchar.set_gold(self.playerchar.get_gold()/2)
                 self.enqueue_message(DialogMessage('base').get_message(), self._chat_id, self._player_id, self._keyboard)
 
-    def create_enemy_list(self, lvl):
+    def create_enemy(self, lvl):
         """
         Enemy spawn rules
         Returns list of enemies
@@ -307,41 +312,84 @@ class Game:
         If character is not dead, leads to won_battle()
         """
         battle_log = ""  # creating battle log
+        player_chars = [self.playerchar] + self.playerchar.get_summons()
+        enemies = self._enemy.get_summons() + [self._enemy]
         while self.playerchar.is_alive():
-            battle_log += self.playerchar.attack(
-                next(enemy for enemy in self.enemies if enemy.is_alive()))
-            for enemy in self.enemies:
-                if enemy.is_alive():
-                    battle_log += enemy.attack(self.playerchar)
-                    if not self.playerchar.is_alive():
-                        battle_log += DialogMessage('won_C',
-                                                    {'char': enemy.get_class()}).get_message()
-                        self.enqueue_message(
-                            battle_log, self._chat_id, self._player_id, self._keyboard)
-                        self.enqueue_message(DialogMessage(
-                            'dead').get_message(), self._chat_id, self._player_id, self._keyboard)
-                        # user_list.pop(self._player_id['id'])  # deleting user character
-                        self.enqueue_message(DialogMessage(
-                            'end_game').get_message(), self._chat_id, self._player_id, self._keyboard)
-                        # this needs to be reworked
-                        self.set_state('Game Start')
-                        self.enqueue_message(
-                            'Ready Player One', self._chat_id, self._player_id, self._keyboard)
-                        self.enqueue_message(DialogMessage(
-                            'start_game').get_message(), self._chat_id, self._player_id, self._keyboard)
-                        # this needs to be reworked
-                        break
-            if all(not enemy.is_alive() for enemy in self.enemies):
+            if self._enemy.get_summons() and next((summon for summon in self._enemy.get_summons() if summon.is_alive()), None):
+                target = next((summon for summon in self._enemy.get_summons() if summon.is_alive()), None)
+                for char in player_chars:
+                    battle_log += char.attack(target)
+            elif self._enemy.is_alive():
+                for char in player_chars:
+                    battle_log += char.attack(self._enemy)
+            else:
                 battle_log += DialogMessage('won_C',
                                             {'char': self.playerchar.get_class()}).get_message()
                 self.enqueue_message(
                     battle_log, self._chat_id, self._player_id, self._keyboard)
-                self.set_state('Battle Won')
-                self.won_battle(self.enemies)
-                for skill in self.playerchar.get_attack_skills():
-                    skill.set_current_cd(0)
-                self.enemies = []  # deleting enemies
+                self.set_state('Base')
+                self.enqueue_message(DialogMessage(
+                    'base').get_message(), self._chat_id, self._player_id, self._keyboard)
                 break
+            if self.playerchar.get_summons() and next((summon for summon in self.playerchar.get_summons() if summon.is_alive()),
+                                                  None):
+                target = next((summon for summon in self.playerchar.get_summons() if summon.is_alive()), None)
+                for char in enemies:
+                    battle_log += char.attack(target)
+            else:
+                for char in enemies:
+                    battle_log += char.attack(self.playerchar)
+
+            if not self.playerchar.is_alive():
+                battle_log += DialogMessage('won_C', {'char': self._enemy.get_class()}).get_message()
+                self.enqueue_message(
+                            battle_log, self._chat_id, self._player_id, self._keyboard)
+                self.enqueue_message(DialogMessage(
+                    'dead').get_message(), self._chat_id, self._player_id, self._keyboard)
+                # user_list.pop(self._player_id['id'])  # deleting user character
+                self.enqueue_message(DialogMessage(
+                    'end_game').get_message(), self._chat_id, self._player_id, self._keyboard)
+                # this needs to be reworked
+                self.set_state('Game Start')
+                self.enqueue_message(
+                    'Ready Player One', self._chat_id, self._player_id, self._keyboard)
+                self.enqueue_message(DialogMessage(
+                    'start_game').get_message(), self._chat_id, self._player_id, self._keyboard)
+                break
+
+
+            # for enemy in self.enemies:
+            #     if enemy.is_alive():
+            #         battle_log += enemy.attack(self.playerchar)
+            #         if not self.playerchar.is_alive():
+            #             battle_log += DialogMessage('won_C',
+            #                                         {'char': enemy.get_class()}).get_message()
+            #             self.enqueue_message(
+            #                 battle_log, self._chat_id, self._player_id, self._keyboard)
+            #             self.enqueue_message(DialogMessage(
+            #                 'dead').get_message(), self._chat_id, self._player_id, self._keyboard)
+            #             # user_list.pop(self._player_id['id'])  # deleting user character
+            #             self.enqueue_message(DialogMessage(
+            #                 'end_game').get_message(), self._chat_id, self._player_id, self._keyboard)
+            #             # this needs to be reworked
+            #             self.set_state('Game Start')
+            #             self.enqueue_message(
+            #                 'Ready Player One', self._chat_id, self._player_id, self._keyboard)
+            #             self.enqueue_message(DialogMessage(
+            #                 'start_game').get_message(), self._chat_id, self._player_id, self._keyboard)
+            #             # this needs to be reworked
+            #             break
+            # if all(not enemy.is_alive() for enemy in self.enemies):
+            #     battle_log += DialogMessage('won_C',
+            #                                 {'char': self.playerchar.get_class()}).get_message()
+            #     self.enqueue_message(
+            #         battle_log, self._chat_id, self._player_id, self._keyboard)
+            #     self.set_state('Battle Won')
+            #     self.won_battle(self.enemies)
+            #     for skill in self.playerchar.get_attack_skills():
+            #         skill.set_current_cd(0)
+            #     self.enemies = []  # deleting enemies
+            #     break
 
     def won_battle(self, enemies):
         """
