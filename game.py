@@ -327,6 +327,8 @@ class Game:
                                             {'char': self.playerchar.get_class()}).get_message()
                 self.enqueue_message(
                     battle_log, self._chat_id, self._player_id, self._keyboard)
+                for skill in self.playerchar.get_attack_skills():
+                    skill.set_current_cd(0)
                 self.set_state('Base')
                 self.enqueue_message(DialogMessage(
                     'base').get_message(), self._chat_id, self._player_id, self._keyboard)

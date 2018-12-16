@@ -610,19 +610,21 @@ class Monster(Character):
         self._mp = (random.randint(1, 1) * self._lvl_mult)
         self._attack = (random.randint(5, 10) * self._lvl_mult)
         self._armour = 5 * random.uniform(1, 2)
-        self.add_summon(Character())
+        # self.add_summon(Character())
 
 
 class GreaterMonster(Monster):
     def __init__(self, lvl_mult=1):
-        lvl_mult *= 1.5
+        lvl_mult *= 2
         super().__init__(lvl_mult)
         self._cls = 'Greater Monster'
-        self.add_item(RareItem(int(lvl_mult/2)))
-        self.add_item(RareItem(int(lvl_mult/2)))
-        self.add_item(RareItem(int(lvl_mult/2)))
-        self.add_item(RareItem(int(lvl_mult/2)))
+        self.add_item(RareItem(int(lvl_mult), 'Helm'))
+        self.add_item(RareItem(int(lvl_mult), 'Weapon'))
+        self.add_item(RareItem(int(lvl_mult), 'Boots'))
+        self.add_item(RareItem(int(lvl_mult), 'Armour'))
+        self.add_item(RareItem(int(lvl_mult), 'Ring'))
         self._hp = self.get_maxhp()
         self._mp = self.get_mp()
-        if random.random() > 0.5:
+        if random.random() > 0.3:
             self.add_attack_skill(VoidStrike(self))
+        self.update_skills()
