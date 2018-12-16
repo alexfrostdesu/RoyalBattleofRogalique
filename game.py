@@ -22,10 +22,12 @@ class Game:
     def __init__(self, chat_id, player_id):
         self._player_id = player_id
         self._enemy = None
+        self._boss = None
         self._chat_id = chat_id
         self._game_state = 'Game Start'
         self._message_send_list = []
         self._first_launch = True
+        self._act = 1
         self._keyboard = json.dumps({'keyboard': [self.get_state_input()], 'one_time_keyboard': False, 'resize_keyboard': True})
 
     def check_state(self):
@@ -55,7 +57,7 @@ class Game:
         return {'Game Start':{"func": self.game_start,
                               "input": ['Mage', 'Warrior', 'Rogue']},
             'Base':          {"func": self.base,
-                              "input": ['Shop', 'Stats', 'Skills', 'Inventory', 'Find Monsters']},
+                              "input": ['Shop', 'Stats', 'Skills', 'Inventory', 'Check Boss', 'Find Monsters']},
             'Battle':        {"func": self.battle,
                               "input": None},
             'Battle Won':    {"func": self.won_battle,
@@ -65,7 +67,9 @@ class Game:
             'Item Choice':   {"func": self.item_choice,
                               "input": ['Equip', 'Discard']},
             'Shop':          {"func": self.shop,
-                              "input": ['Restore HP', 'Small Potion', 'Medium Potion', 'Attack Boost', 'Magic Boost', 'Exit']}}
+                              "input": ['Restore HP', 'Small Potion', 'Medium Potion', 'Attack Boost', 'Magic Boost', 'Exit']},
+            'Boss Choice':   {"func": self.boss_choice,
+                              "input": ['Attack Boss', 'Return to base']}}
 
     def get_playerchar(self):
         """
@@ -158,8 +162,12 @@ class Game:
         Adventure starts from here
         Inventory, status, shop
         """
-        # keyboard = json.dumps({'keyboard': [self.get_state_input()], 'one_time_keyboard': True, 'resize_keyboard': True})
-        # keyboard = None
+        # 1 act -- GreaterMonster (Monster)
+        # 2 act -- ChampionMonster (Monster, GreaterMonster)
+        # 3 act -- Summoner (GreaterMonster, ChampionMonster)
+        # 4 act -- DarkShadow (ChampionMonster, Summoner)
+        if self._boss is None:
+            self.create_boss()
         if message not in self.get_state_input():  # standard check for right input
             self.enqueue_message('Please input correct command', self._chat_id, self._player_id, self._keyboard)
             self.enqueue_message(DialogMessage(
@@ -177,6 +185,9 @@ class Game:
                 self.send_skills(self.playerchar)
                 self.enqueue_message(DialogMessage(
                     'base').get_message(), self._chat_id, self._player_id, self._keyboard)
+            elif message == 'Check Boss':
+                self.set_state('Boss Choice')
+                self.check_boss()
             elif message == 'Find Monsters':
                 self.set_state('Battle Choice')
                 self.create_battle()
@@ -185,66 +196,50 @@ class Game:
                 self.enqueue_message(StatusMessage(
                     self.playerchar).shop_message(), self._chat_id, self._player_id, self._keyboard)
 
-    def shop(self, message=None):
+    def create_boss(self):
         """
-        Shop part
+        Creating act boss enemy
+        """
+        if self._act == 1:
+            self._boss = GreaterMonster(2)
+        else:
+            self._boss = GreaterMonster(self._act + 2)  # don't forget to change that!
+
+    def check_boss(self):
+        """
+        Shows boss message and prompts to attack him
+        """
+        self.enqueue_message('You approach the boss of this act:',
+                             self._chat_id, self._player_id, self._keyboard)
+        self.enqueue_message(DialogMessage('see_enemy_C', {'char': self._boss.get_class()}).get_message(),
+                             self._chat_id, self._player_id, self._keyboard)
+        self.send_stats(self._boss)
+        if self._boss.get_summons():
+            self.enqueue_message("Enemy summons:",
+                                 self._chat_id, self._player_id, self._keyboard)
+            for summon in self._enemy.get_summons():
+                self.send_stats(summon)
+        self.enqueue_message(DialogMessage('attack_enemy').get_message(),  # DON'T FORGET TO CHANGE THAT
+                             self._chat_id, self._player_id, self._keyboard)
+
+    def boss_choice(self, message):
+        """
+        Battle battle_choice part
+        Fight or flight, battle() or base()
         """
         if message not in self.get_state_input():  # standard check for right input
-            self.enqueue_message('Please input correct command', self._chat_id, self._player_id, self._keyboard)
-            self.enqueue_message(StatusMessage(self.playerchar).shop_message(), self._chat_id, self._player_id, self._keyboard)
-        elif message != 'Exit':
-            if message == 'Restore HP':
-                hp = int(self.playerchar.get_maxhp() -
-                         self.playerchar.get_current_hp())
-                if self.playerchar.get_gold() >= hp:
-                    self.playerchar.spend_gold(hp)
-                    self.playerchar.set_hp(self.playerchar.get_maxhp())
-                    self.enqueue_message(
-                        'HP restored', self._chat_id, self._player_id, self._keyboard)
-                    self.send_stats(self.playerchar)
-                else:
-                    self.enqueue_message('Not enough gold', self._chat_id, self._player_id, self._keyboard)
-            if message == 'Small Potion':
-                if self.playerchar.get_gold() >= 10:
-                    self.playerchar.spend_gold(10)
-                    self.playerchar.set_hp(self.playerchar.get_current_hp() + 10)
-                    self.enqueue_message(
-                        'HP restored', self._chat_id, self._player_id, self._keyboard)
-                    self.send_stats(self.playerchar)
-                else:
-                    self.enqueue_message('Not enough gold', self._chat_id, self._player_id, self._keyboard)
-            if message == 'Medium Potion':
-                if self.playerchar.get_gold() >= 100:
-                    self.playerchar.spend_gold(100)
-                    self.playerchar.set_hp(self.playerchar.get_current_hp() + 100)
-                    self.enqueue_message(
-                        'HP restored', self._chat_id, self._player_id, self._keyboard)
-                    self.send_stats(self.playerchar)
-                else:
-                    self.enqueue_message('Not enough gold', self._chat_id, self._player_id, self._keyboard)
-            if message == 'Attack Boost':
-                if self.playerchar.get_gold() >= 1000:
-                    self.playerchar.spend_gold(1000)
-                    self.playerchar.set_attack(self.playerchar._attack + 10)
-                    self.enqueue_message(
-                        'Attack Boosted', self._chat_id, self._player_id, self._keyboard)
-                    self.send_stats(self.playerchar)
-                else:
-                    self.enqueue_message(
-                        'Not enough gold', self._chat_id, self._player_id, self._keyboard)
-            if message == 'Magic Boost':
-                if self.playerchar.get_gold() >= 1000:
-                    self.playerchar.spend_gold(1000)
-                    self.enqueue_message(
-                        'MP Boosted', self._chat_id, self._player_id, self._keyboard)
-                    self.send_stats(self.playerchar)
-                else:
-                    self.enqueue_message(
-                        'Not enough gold', self._chat_id, self._player_id, self._keyboard)
-            self.enqueue_message(StatusMessage(self.playerchar).shop_message(), self._chat_id, self._player_id, self._keyboard)
+            self.enqueue_message('Please input correct command',
+                                 self._chat_id, self._player_id)
+            self.enqueue_message(DialogMessage('attack_enemy').get_message(),
+                                 self._chat_id, self._player_id, self._keyboard)
         else:
-            self.set_state('Base')
-            self.enqueue_message(DialogMessage('base').get_message(), self._chat_id, self._player_id, self._keyboard)
+            if message == 'Attack Boss':
+                # self.set_state('Battle')
+                # self.battle()
+                pass  # DON'T FORGET TO CHANGE THAT
+            elif message == 'Return to base':
+                self.set_state('Base')
+                self.enqueue_message(DialogMessage('base').get_message(), self._chat_id, self._player_id, self._keyboard)
 
     def create_battle(self):
         """Creating the enemy list first time"""
@@ -273,7 +268,7 @@ class Game:
         else:
             if message == 'Attack':
                 self.set_state('Battle')
-                self.battle()
+                self.battle(self._enemy)
             elif message == 'Retreat':
                 self.set_state('Base')
                 self.enqueue_message("You've lost half of your gold, while running away", self._chat_id, self._player_id, self._keyboard)
@@ -306,23 +301,20 @@ class Game:
             enemy_list.append(Monster(lvl))
         return enemy_list
 
-    def battle(self):
+    def battle(self, enemy, type='Normal'):
         """
         Battle part
         If character is not dead, leads to won_battle()
         """
         battle_log = ""  # creating battle log
+        enemy = enemy
         player_chars = [self.playerchar] + self.playerchar.get_summons()
-        enemies = self._enemy.get_summons() + [self._enemy]
+        enemies = [enemy] + enemy.get_summons()
         while self.playerchar.is_alive():
-            if self._enemy.get_summons() and next((summon for summon in self._enemy.get_summons() if summon.is_alive()), None):
-                target = next((summon for summon in self._enemy.get_summons() if summon.is_alive()), None)
-                for char in player_chars:
-                    battle_log += char.attack(target)
-            elif self._enemy.is_alive():
-                for char in player_chars:
+            for char in player_chars:
+                if char.is_alive():
                     battle_log += char.attack(self._enemy)
-            else:
+            if not self._enemy.is_alive():
                 battle_log += DialogMessage('won_C',
                                             {'char': self.playerchar.get_class()}).get_message()
                 self.enqueue_message(
@@ -333,15 +325,9 @@ class Game:
                 self.enqueue_message(DialogMessage(
                     'base').get_message(), self._chat_id, self._player_id, self._keyboard)
                 break
-            if self.playerchar.get_summons() and next((summon for summon in self.playerchar.get_summons() if summon.is_alive()),
-                                                  None):
-                target = next((summon for summon in self.playerchar.get_summons() if summon.is_alive()), None)
-                for char in enemies:
-                    battle_log += char.attack(target)
-            else:
-                for char in enemies:
+            for char in enemies:
+                if char.is_alive():
                     battle_log += char.attack(self.playerchar)
-
             if not self.playerchar.is_alive():
                 battle_log += DialogMessage('won_C', {'char': self._enemy.get_class()}).get_message()
                 self.enqueue_message(
@@ -358,40 +344,6 @@ class Game:
                 self.enqueue_message(DialogMessage(
                     'start_game').get_message(), self._chat_id, self._player_id, self._keyboard)
                 break
-
-
-            # for enemy in self.enemies:
-            #     if enemy.is_alive():
-            #         battle_log += enemy.attack(self.playerchar)
-            #         if not self.playerchar.is_alive():
-            #             battle_log += DialogMessage('won_C',
-            #                                         {'char': enemy.get_class()}).get_message()
-            #             self.enqueue_message(
-            #                 battle_log, self._chat_id, self._player_id, self._keyboard)
-            #             self.enqueue_message(DialogMessage(
-            #                 'dead').get_message(), self._chat_id, self._player_id, self._keyboard)
-            #             # user_list.pop(self._player_id['id'])  # deleting user character
-            #             self.enqueue_message(DialogMessage(
-            #                 'end_game').get_message(), self._chat_id, self._player_id, self._keyboard)
-            #             # this needs to be reworked
-            #             self.set_state('Game Start')
-            #             self.enqueue_message(
-            #                 'Ready Player One', self._chat_id, self._player_id, self._keyboard)
-            #             self.enqueue_message(DialogMessage(
-            #                 'start_game').get_message(), self._chat_id, self._player_id, self._keyboard)
-            #             # this needs to be reworked
-            #             break
-            # if all(not enemy.is_alive() for enemy in self.enemies):
-            #     battle_log += DialogMessage('won_C',
-            #                                 {'char': self.playerchar.get_class()}).get_message()
-            #     self.enqueue_message(
-            #         battle_log, self._chat_id, self._player_id, self._keyboard)
-            #     self.set_state('Battle Won')
-            #     self.won_battle(self.enemies)
-            #     for skill in self.playerchar.get_attack_skills():
-            #         skill.set_current_cd(0)
-            #     self.enemies = []  # deleting enemies
-            #     break
 
     def won_battle(self, enemies):
         """
@@ -510,6 +462,66 @@ class Game:
                 self.enqueue_message(DialogMessage(
                     'base').get_message(), self._chat_id, self._player_id, self._keyboard)
 
+    def shop(self, message=None):
+        """
+        Shop part
+        """
+        if message not in self.get_state_input():  # standard check for right input
+            self.enqueue_message('Please input correct command', self._chat_id, self._player_id, self._keyboard)
+            self.enqueue_message(StatusMessage(self.playerchar).shop_message(), self._chat_id, self._player_id, self._keyboard)
+        elif message != 'Exit':
+            if message == 'Restore HP':
+                hp = int(self.playerchar.get_maxhp() -
+                         self.playerchar.get_current_hp())
+                if self.playerchar.get_gold() >= hp:
+                    self.playerchar.spend_gold(hp)
+                    self.playerchar.set_hp(self.playerchar.get_maxhp())
+                    self.enqueue_message(
+                        'HP restored', self._chat_id, self._player_id, self._keyboard)
+                    self.send_stats(self.playerchar)
+                else:
+                    self.enqueue_message('Not enough gold', self._chat_id, self._player_id, self._keyboard)
+            if message == 'Small Potion':
+                if self.playerchar.get_gold() >= 10:
+                    self.playerchar.spend_gold(10)
+                    self.playerchar.set_hp(self.playerchar.get_current_hp() + 10)
+                    self.enqueue_message(
+                        'HP restored', self._chat_id, self._player_id, self._keyboard)
+                    self.send_stats(self.playerchar)
+                else:
+                    self.enqueue_message('Not enough gold', self._chat_id, self._player_id, self._keyboard)
+            if message == 'Medium Potion':
+                if self.playerchar.get_gold() >= 100:
+                    self.playerchar.spend_gold(100)
+                    self.playerchar.set_hp(self.playerchar.get_current_hp() + 100)
+                    self.enqueue_message(
+                        'HP restored', self._chat_id, self._player_id, self._keyboard)
+                    self.send_stats(self.playerchar)
+                else:
+                    self.enqueue_message('Not enough gold', self._chat_id, self._player_id, self._keyboard)
+            if message == 'Attack Boost':
+                if self.playerchar.get_gold() >= 1000:
+                    self.playerchar.spend_gold(1000)
+                    self.playerchar.set_attack(self.playerchar._attack + 10)
+                    self.enqueue_message(
+                        'Attack Boosted', self._chat_id, self._player_id, self._keyboard)
+                    self.send_stats(self.playerchar)
+                else:
+                    self.enqueue_message(
+                        'Not enough gold', self._chat_id, self._player_id, self._keyboard)
+            if message == 'Magic Boost':
+                if self.playerchar.get_gold() >= 1000:
+                    self.playerchar.spend_gold(1000)
+                    self.enqueue_message(
+                        'MP Boosted', self._chat_id, self._player_id, self._keyboard)
+                    self.send_stats(self.playerchar)
+                else:
+                    self.enqueue_message(
+                        'Not enough gold', self._chat_id, self._player_id, self._keyboard)
+            self.enqueue_message(StatusMessage(self.playerchar).shop_message(), self._chat_id, self._player_id, self._keyboard)
+        else:
+            self.set_state('Base')
+            self.enqueue_message(DialogMessage('base').get_message(), self._chat_id, self._player_id, self._keyboard)
 
 # TODO: pseudorandom
 # TODO enemies: Dark Shadow

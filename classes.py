@@ -392,6 +392,10 @@ class Character:
         """
         output = None
         log = ''
+        if next((summon for summon in target.get_summons() if summon.is_alive()), None):
+            attack_target = next(summon for summon in target.get_summons() if summon.is_alive())
+        else:
+            attack_target = target
         for skill in self.get_attack_skills():
             if skill.is_available():
                 skill.update_skill(self)
@@ -403,9 +407,9 @@ class Character:
         if output is None:
             attack = self.get_attack() * self.get_attack_modifier()
             output = {'Damage': attack, 'Type': 'Normal'}
-        damage_types = {'Normal': target.take_damage_normal,
-                        'Magic': target.take_damage_magic,
-                        'Pure': target.take_damage_pure}
+        damage_types = {'Normal': attack_target.take_damage_normal,
+                        'Magic': attack_target.take_damage_magic,
+                        'Pure': attack_target.take_damage_pure}
         log += damage_types[output['Type']](output['Damage'], self.get_class())
         return log
 
