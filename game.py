@@ -28,7 +28,8 @@ class Game:
         self._message_send_list = []
         self._first_launch = True
         self._act = 1
-        self._keyboard = json.dumps({'keyboard': [self.get_state_input()], 'one_time_keyboard': False, 'resize_keyboard': True})
+        self._keyboard = json.dumps(
+            {'keyboard': [self.get_state_input()], 'one_time_keyboard': False, 'resize_keyboard': True})
 
     def check_state(self):
         """
@@ -54,22 +55,23 @@ class Game:
 
     @functools.lru_cache(8)
     def get_game_states(self):
-        return {'Game Start':{"func": self.game_start,
-                              "input": ['Mage', 'Warrior', 'Rogue']},
-            'Base':          {"func": self.base,
-                              "input": ['Shop', 'Stats', 'Skills', 'Inventory', 'Check Boss', 'Find Monsters']},
-            'Battle':        {"func": self.battle,
-                              "input": None},
-            'Battle Won':    {"func": self.won_battle,
-                              "input": None},
-            'Battle Choice': {"func": self.battle_choice,
-                              "input": ['Attack', 'Retreat']},
-            'Item Choice':   {"func": self.item_choice,
-                              "input": ['Equip', 'Discard']},
-            'Shop':          {"func": self.shop,
-                              "input": ['Restore HP', 'Small Potion', 'Medium Potion', 'Attack Boost', 'Magic Boost', 'Exit']},
-            'Boss Choice':   {"func": self.boss_choice,
-                              "input": ['Attack Boss', 'Return to base']}}
+        return {'Game Start': {"func": self.game_start,
+                               "input": ['Mage', 'Warrior', 'Rogue']},
+                'Base': {"func": self.base,
+                         "input": ['Shop', 'Stats', 'Skills', 'Inventory', 'Check Boss', 'Find Monsters']},
+                'Battle': {"func": self.battle,
+                           "input": None},
+                'Battle Won': {"func": self.won_battle,
+                               "input": None},
+                'Battle Choice': {"func": self.battle_choice,
+                                  "input": ['Attack', 'Retreat']},
+                'Item Choice': {"func": self.item_choice,
+                                "input": ['Equip', 'Discard']},
+                'Shop': {"func": self.shop,
+                         "input": ['Restore HP', 'Small Potion', 'Medium Potion', 'Attack Boost', 'Magic Boost',
+                                   'Exit']},
+                'Boss Choice': {"func": self.boss_choice,
+                                "input": ['Attack Boss', 'Return to base']}}
 
     def get_playerchar(self):
         """
@@ -109,7 +111,7 @@ class Game:
         fnc(message)
         return self.send_all_messages()
 
-#   Lazy copypaste 2 lines at a time #
+    #   Lazy copypaste 2 lines at a time #
 
     def send_stats(self, char):
         """
@@ -136,7 +138,7 @@ class Game:
         roll = random.randint(1, 6)
         return roll >= number
 
-#   Game start block #
+    #   Game start block #
 
     def game_start(self, message):
         """
@@ -167,7 +169,9 @@ class Game:
         # 3 act -- Summoner (GreaterMonster, ChampionMonster)
         # 4 act -- DarkShadow (ChampionMonster, Summoner)
         if self._boss is None:
-            self.create_boss()
+            self.create_boss(self._act)
+        if self._enemy is None:
+            self.create_enemy(self._act)
         if message not in self.get_state_input():  # standard check for right input
             self.enqueue_message('Please input correct command', self._chat_id, self._player_id, self._keyboard)
             self.enqueue_message(DialogMessage(
@@ -196,22 +200,40 @@ class Game:
                 self.enqueue_message(StatusMessage(
                     self.playerchar).shop_message(), self._chat_id, self._player_id, self._keyboard)
 
-    def create_boss(self):
+        # 1 act -- GreaterMonster (Monster)
+        # 2 act -- ChampionMonster (Monster, GreaterMonster)
+        # 3 act -- Summoner (GreaterMonster, ChampionMonster)
+        # 4 act -- DarkShadow (ChampionMonster, Summoner)
+
+    def create_boss(self, act):
         """
         Creating act boss enemy
         """
-        if self._act == 1:
-            self._boss = GreaterMonster(2)
-        else:
-            self._boss = GreaterMonster(self._act + 2)  # don't forget to change that!
+        act_list = {1: GreaterMonster
+                    #2: ChampionMonster,
+                    #3: Summoner,
+                    #4: DarkShadow
+                    }
+
+        self._boss = act_list[act](act + 2)  # don't forget to change that!
+
+    def create_enemy(self, act):
+        """
+        Enemy spawn rules
+        Returns list of enemies
+        """
+        act_list = {1: [Monster],
+                    2: [Monster, GreaterMonster],
+                    3: [GreaterMonster]
+                    #4: DarkShadow
+                    }
+        self._enemy = random.choice(act_list[act])(act)
 
     def check_boss(self):
         """
         Shows boss message and prompts to attack him
         """
         self.enqueue_message('You approach the boss of this act:',
-                             self._chat_id, self._player_id, self._keyboard)
-        self.enqueue_message(DialogMessage('see_enemy_C', {'char': self._boss.get_class()}).get_message(),
                              self._chat_id, self._player_id, self._keyboard)
         self.send_stats(self._boss)
         if self._boss.get_summons():
@@ -234,12 +256,12 @@ class Game:
                                  self._chat_id, self._player_id, self._keyboard)
         else:
             if message == 'Attack Boss':
-                # self.set_state('Battle')
-                # self.battle()
-                pass  # DON'T FORGET TO CHANGE THAT
+                self.set_state('Battle')
+                self.battle(self._boss, 'Boss')
             elif message == 'Return to base':
                 self.set_state('Base')
-                self.enqueue_message(DialogMessage('base').get_message(), self._chat_id, self._player_id, self._keyboard)
+                self.enqueue_message(DialogMessage('base').get_message(), self._chat_id, self._player_id,
+                                     self._keyboard)
 
     def create_battle(self):
         """Creating the enemy list first time"""
@@ -271,35 +293,11 @@ class Game:
                 self.battle(self._enemy)
             elif message == 'Retreat':
                 self.set_state('Base')
-                self.enqueue_message("You've lost half of your gold, while running away", self._chat_id, self._player_id, self._keyboard)
-                self.playerchar.set_gold(self.playerchar.get_gold()/2)
-                self.enqueue_message(DialogMessage('base').get_message(), self._chat_id, self._player_id, self._keyboard)
-
-    def create_enemy(self, lvl):
-        """
-        Enemy spawn rules
-        Returns list of enemies
-        """
-        enemy_list = []
-        monster = (0, 10, 20)
-        g_monster = (10, 20, 30)
-        enemies_count = lvl // 10
-
-        for step in g_monster:
-            ind = g_monster.index(step)
-            if lvl >= step and len(enemy_list) < enemies_count + 1:
-                if self.roll(4 - ind):
-                    enemy_list.append(GreaterMonster(lvl))
-
-        for step in monster:
-            ind = monster.index(step)
-            if lvl >= step and len(enemy_list) < enemies_count + 1:
-                if self.roll(4 - ind):
-                    enemy_list.append(Monster(lvl))
-
-        if len(enemy_list) <= enemies_count:
-            enemy_list.append(Monster(lvl))
-        return enemy_list
+                self.enqueue_message("You've lost half of your gold, while running away", self._chat_id,
+                                     self._player_id, self._keyboard)
+                self.playerchar.set_gold(self.playerchar.get_gold() / 2)
+                self.enqueue_message(DialogMessage('base').get_message(), self._chat_id, self._player_id,
+                                     self._keyboard)
 
     def battle(self, enemy, type='Normal'):
         """
@@ -314,16 +312,20 @@ class Game:
             for char in player_chars:
                 if char.is_alive():
                     battle_log += char.attack(self._enemy)
-            if not self._enemy.is_alive():
+            if not enemy.is_alive():
                 battle_log += DialogMessage('won_C',
                                             {'char': self.playerchar.get_class()}).get_message()
                 self.enqueue_message(
                     battle_log, self._chat_id, self._player_id, self._keyboard)
                 for skill in self.playerchar.get_attack_skills():
                     skill.set_current_cd(0)
-                self.set_state('Base')
-                self.enqueue_message(DialogMessage(
-                    'base').get_message(), self._chat_id, self._player_id, self._keyboard)
+                self.won_battle(enemy)
+                if type == 'Boss':
+                    self._act += 1
+                    self._boss = None
+                # self.set_state('Base')
+                # self.enqueue_message(DialogMessage(
+                #     'base').get_message(), self._chat_id, self._player_id, self._keyboard)
                 break
             for char in enemies:
                 if char.is_alive():
@@ -331,10 +333,11 @@ class Game:
             if not self.playerchar.is_alive():
                 battle_log += DialogMessage('won_C', {'char': self._enemy.get_class()}).get_message()
                 self.enqueue_message(
-                            battle_log, self._chat_id, self._player_id, self._keyboard)
+                    battle_log, self._chat_id, self._player_id, self._keyboard)
                 self.enqueue_message(DialogMessage(
                     'dead').get_message(), self._chat_id, self._player_id, self._keyboard)
                 # user_list.pop(self._player_id['id'])  # deleting user character
+                self._enemy = self._boss = None
                 self.enqueue_message(DialogMessage(
                     'end_game').get_message(), self._chat_id, self._player_id, self._keyboard)
                 # this needs to be reworked
@@ -345,29 +348,30 @@ class Game:
                     'start_game').get_message(), self._chat_id, self._player_id, self._keyboard)
                 break
 
-    def won_battle(self, enemies):
+    def won_battle(self, enemy):
         """
         After battle is won, hero gets his reward
         """
-        for enemy in enemies:
-            is_lvlup = self.playerchar.add_exp(enemy.get_maxhp())
-            if is_lvlup:
-                self.enqueue_message(is_lvlup, self._chat_id, self._player_id, self._keyboard)
-            self.playerchar.set_gold(
+        is_lvlup = self.playerchar.add_exp(enemy.get_maxhp())
+        if is_lvlup:
+            self.enqueue_message(is_lvlup, self._chat_id, self._player_id, self._keyboard)
+        self.playerchar.set_gold(
                 self.playerchar.get_gold() + int(enemy.get_attack()))  # gold drop
-        self.check_drop(enemies)  # checking for item drop
+        self.check_drop(enemy)  # checking for item drop
 
-    def check_drop(self, enemies):
+
+    def check_drop(self, enemy):
         """
         Rolling for items and applying them to the character
         """
         # healing potion in a dire need of rewrite
         if self.roll(5):
             hp = 'Healing Potion'
-            item_healing = random.randint(10, int(enemies[0].get_maxhp()))
+            item_healing = random.randint(10, int(enemy.get_maxhp()))
             self.enqueue_message(f"You found a *{hp}*!\n" +
                                  DialogMessage(
-                                     'healed_CA', {'char': self.playerchar.get_class(), 'amount': item_healing}).get_message(),
+                                     'healed_CA',
+                                     {'char': self.playerchar.get_class(), 'amount': item_healing}).get_message(),
                                  self._chat_id, self._player_id)
             self.playerchar.heal(item_healing)
 
@@ -390,19 +394,17 @@ class Game:
                 self.item_drop.append(CommonItem(self.playerchar.get_lvl()))
 
         self.item_drop = []
-
-        for enemy in enemies:
-            enemy_score = enemy.get_maxhp() + enemy.get_attack()
-            if enemy_score > 200:
-                rare_drop(0.8)
-            elif enemy_score > 150:
-                rare_drop(0.5)
-            elif enemy_score > 100:
-                common_drop(1)
-            elif enemy_score > 50:
-                common_drop(0.8)
-            else:
-                common_drop(0.5)
+        enemy_score = enemy.get_maxhp() + enemy.get_attack()
+        if enemy_score > 200:
+            rare_drop(0.8)
+        elif enemy_score > 150:
+            rare_drop(0.5)
+        elif enemy_score > 100:
+            common_drop(1)
+        elif enemy_score > 50:
+            common_drop(0.8)
+        else:
+            common_drop(0.5)
         for item in self.item_drop:
             if item:
                 playeritem = self.playerchar.get_inventory()[item.get_type()]
@@ -468,7 +470,8 @@ class Game:
         """
         if message not in self.get_state_input():  # standard check for right input
             self.enqueue_message('Please input correct command', self._chat_id, self._player_id, self._keyboard)
-            self.enqueue_message(StatusMessage(self.playerchar).shop_message(), self._chat_id, self._player_id, self._keyboard)
+            self.enqueue_message(StatusMessage(self.playerchar).shop_message(), self._chat_id, self._player_id,
+                                 self._keyboard)
         elif message != 'Exit':
             if message == 'Restore HP':
                 hp = int(self.playerchar.get_maxhp() -
@@ -518,10 +521,12 @@ class Game:
                 else:
                     self.enqueue_message(
                         'Not enough gold', self._chat_id, self._player_id, self._keyboard)
-            self.enqueue_message(StatusMessage(self.playerchar).shop_message(), self._chat_id, self._player_id, self._keyboard)
+            self.enqueue_message(StatusMessage(self.playerchar).shop_message(), self._chat_id, self._player_id,
+                                 self._keyboard)
         else:
             self.set_state('Base')
             self.enqueue_message(DialogMessage('base').get_message(), self._chat_id, self._player_id, self._keyboard)
+
 
 # TODO: pseudorandom
 # TODO enemies: Dark Shadow
@@ -568,7 +573,7 @@ class GameManager():
         """Starts a new game, and returns appropriate messages"""
         self.user_list[player_id] = Game(chat_id, player_id)
         keyboard = json.dumps(
-             {'keyboard': [['Mage', 'Warrior', 'Rogue']], 'one_time_keyboard': False, 'resize_keyboard': True})
+            {'keyboard': [['Mage', 'Warrior', 'Rogue']], 'one_time_keyboard': False, 'resize_keyboard': True})
         return [OutMessage(
             'Ready Player One', chat_id, player_id),
             OutMessage(DialogMessage(
@@ -602,7 +607,7 @@ class GameManager():
 
     def get_all_commands(self):
         """Returns all avaliable commands"""
-        return list(self.commands_out_game.keys())+list(self.commands_in_game.keys())
+        return list(self.commands_out_game.keys()) + list(self.commands_in_game.keys())
 
     def invalid_input(self, chat_id, player_id):
         return [OutMessage(
@@ -620,21 +625,21 @@ class GameManager():
                     chat_id = new_message.get_chat_id()
                     content = new_message.get_content()
                     player_id = user["id"]
-                    if content in self.get_all_commands(): # commands
+                    if content in self.get_all_commands():  # commands
                         messages_to_send += self.process_commands(chat_id, player_id, content)
-                    elif player_id in self.user_list.keys(): # game
+                    elif player_id in self.user_list.keys():  # game
                         player_game = self.user_list[player_id]
                         messages_to_send += player_game.process_incoming_message(
                             content)
                         if self.redis_save:
                             self.redis.save_game(chat_id, player_game)
-                    else: # invalid input
+                    else:  # invalid input
                         messages_to_send += self.invalid_input(chat_id, player_id)
         except:
             print("Something went wrong")
-            print("*"*50)
+            print("*" * 50)
             traceback.print_exc()
-            print("*"*50)
+            print("*" * 50)
         return self.merge_messages(messages_to_send)
 
 
