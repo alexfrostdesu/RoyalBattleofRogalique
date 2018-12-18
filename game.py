@@ -63,8 +63,8 @@ class Game:
                            "input": None},
                 'Battle Won': {"func": self.won_battle,
                                "input": None},
-                'Battle Choice': {"func": self.battle_choice,
-                                  "input": ['Attack', 'Retreat']},
+                'Enemy Choice': {"func": self.enemy_choice,
+                                 "input": ['Attack', 'Retreat']},
                 'Item Choice': {"func": self.item_choice,
                                 "input": ['Equip', 'Discard']},
                 'Shop': {"func": self.shop,
@@ -191,10 +191,10 @@ class Game:
                     'base').get_message(), self._chat_id, self._player_id, self._keyboard)
             elif message == 'Check Boss':
                 self.set_state('Boss Choice')
-                self.check_boss()
+                self.check_enemy(self._boss)
             elif message == 'Find Monsters':
-                self.set_state('Battle Choice')
-                self.create_battle()
+                self.set_state('Enemy Choice')
+                self.check_enemy(self._enemy)
             elif message == 'Shop':
                 self.set_state('Shop')
                 self.enqueue_message(StatusMessage(
@@ -214,39 +214,26 @@ class Game:
                     #3: Summoner,
                     #4: DarkShadow
                     }
-
-        self._boss = act_list[act](act + 2)  # don't forget to change that!
+        if act > max(act_list.keys()):
+            act = max(act_list.keys())  # don't forget to change that!
+        self._boss = {'Enemy': act_list[act](act + 2), 'Type': 'Boss'}
 
     def create_enemy(self, act):
         """
         Enemy spawn rules
-        Returns list of enemies
         """
         act_list = {1: [Monster],
                     2: [Monster, GreaterMonster],
                     3: [GreaterMonster]
                     #4: DarkShadow
                     }
-        self._enemy = random.choice(act_list[act])(act)
-
-    def check_boss(self):
-        """
-        Shows boss message and prompts to attack him
-        """
-        self.enqueue_message('You approach the boss of this act:',
-                             self._chat_id, self._player_id, self._keyboard)
-        self.send_stats(self._boss)
-        if self._boss.get_summons():
-            self.enqueue_message("Enemy summons:",
-                                 self._chat_id, self._player_id, self._keyboard)
-            for summon in self._enemy.get_summons():
-                self.send_stats(summon)
-        self.enqueue_message(DialogMessage('attack_enemy').get_message(),  # DON'T FORGET TO CHANGE THAT
-                             self._chat_id, self._player_id, self._keyboard)
+        if act > max(act_list.keys()):
+            act = max(act_list.keys())  # don't forget to change that!
+        self._enemy = {'Enemy': random.choice(act_list[act])(act), 'Type': 'Enemy'}
 
     def boss_choice(self, message):
         """
-        Battle battle_choice part
+        Battle enemy_choice part
         Fight or flight, battle() or base()
         """
         if message not in self.get_state_input():  # standard check for right input
@@ -257,29 +244,15 @@ class Game:
         else:
             if message == 'Attack Boss':
                 self.set_state('Battle')
-                self.battle(self._boss, 'Boss')
+                self.battle(self._boss)
             elif message == 'Return to base':
                 self.set_state('Base')
                 self.enqueue_message(DialogMessage('base').get_message(), self._chat_id, self._player_id,
                                      self._keyboard)
 
-    def create_battle(self):
-        """Creating the enemy list first time"""
-        self._enemy = Monster(self.playerchar.get_lvl())
-        self.enqueue_message(DialogMessage('see_enemy_C', {'char': self._enemy.get_class()}).get_message(),
-                             self._chat_id, self._player_id, self._keyboard)
-        self.send_stats(self._enemy)
-        if self._enemy.get_summons():
-            self.enqueue_message("Enemy summons:",
-                                 self._chat_id, self._player_id, self._keyboard)
-            for summon in self._enemy.get_summons():
-                self.send_stats(summon)
-        self.enqueue_message(DialogMessage('attack_enemy').get_message(),
-                             self._chat_id, self._player_id, self._keyboard)  # prompting to attack
-
-    def battle_choice(self, message):
+    def enemy_choice(self, message):
         """
-        Battle battle_choice part
+        Battle enemy_choice part
         Fight or flight, battle() or base()
         """
         if message not in self.get_state_input():  # standard check for right input
@@ -299,13 +272,32 @@ class Game:
                 self.enqueue_message(DialogMessage('base').get_message(), self._chat_id, self._player_id,
                                      self._keyboard)
 
-    def battle(self, enemy, type='Normal'):
+    def check_enemy(self, enemy):
+        """
+        Sending message about the enemy
+        """
+        enemy = enemy['Enemy']
+        enemy_type = enemy['Type']
+        message_list = {'Normal': DialogMessage('see_enemy_C', {'char': enemy.get_class()}).get_message(),
+                        'Boss': 'You approach the boss of this act:'}
+        self.enqueue_message(message_list[enemy_type],
+                             self._chat_id, self._player_id, self._keyboard)
+        self.send_stats(enemy)
+        if enemy.get_summons():
+            self.enqueue_message("Enemy summons:",
+                                 self._chat_id, self._player_id, self._keyboard)
+            for summon in enemy.get_summons():
+                self.send_stats(summon)
+        self.enqueue_message(DialogMessage('attack_enemy').get_message(),
+                             self._chat_id, self._player_id, self._keyboard)  # prompting to attack
+
+    def battle(self, enemy):
         """
         Battle part
         If character is not dead, leads to won_battle()
         """
         battle_log = ""  # creating battle log
-        enemy = enemy
+        enemy = enemy['Enemy']
         player_chars = [self.playerchar] + self.playerchar.get_summons()
         enemies = [enemy] + enemy.get_summons()
         while self.playerchar.is_alive():
@@ -320,12 +312,11 @@ class Game:
                 for skill in self.playerchar.get_attack_skills():
                     skill.set_current_cd(0)
                 self.won_battle(enemy)
-                if type == 'Boss':
+                if enemy['Type'] == 'Boss':
                     self._act += 1
                     self._boss = None
-                # self.set_state('Base')
-                # self.enqueue_message(DialogMessage(
-                #     'base').get_message(), self._chat_id, self._player_id, self._keyboard)
+                elif enemy['Type'] == 'Normal':
+                    self._enemy = None
                 break
             for char in enemies:
                 if char.is_alive():
@@ -443,7 +434,7 @@ class Game:
 
     def item_choice(self, message):
         """
-        Player battle_choice of equipping the item
+        Player enemy_choice of equipping the item
         None is a dirty hack and I am not proud
         """
         if message not in self.get_state_input():
