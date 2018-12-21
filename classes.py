@@ -261,14 +261,30 @@ class Character:
         self._mp_item_bonus = 0
         self._attack_item_bonus = 0
         self._armour_item_bonus = 0
+        bonus_dict = {'Attack': 1, 'HP': 1, 'MP': 1, 'Defence': 1}
         for i in range(0, len(self._inventory)):
             slot = list(self._inventory)[i]
             item = self._inventory[slot]
             if item is not None:
-                self.set_hp_item_bonus(self.get_hp_modifier() + item.get_bonus_hp())
+                self._hp_item_bonus += item.get_bonus_hp()
                 self._mp_item_bonus += item.get_bonus_mp()
                 self._attack_item_bonus += item.get_bonus_attack()
                 self._armour_item_bonus += item.get_bonus_defence()
+                # unique bonus check
+                if item.get_unique_bonus():
+                    unique_bonus_type = item.get_unique_bonus()[0]  # rewrite that sometime
+                    unique_bonus_value = item.get_unique_bonus()[1]  # rewrite that sometime
+                    if unique_bonus_type == 'All':
+                        for stat in bonus_dict.keys():
+                            bonus_dict[stat] *= unique_bonus_value
+                    elif unique_bonus_type in bonus_dict.keys():
+                        bonus_dict[unique_bonus_type] *= unique_bonus_value
+        # unique bonus application
+        self._hp_item_bonus *= bonus_dict['HP']
+        self._mp_item_bonus *= bonus_dict['MP']
+        self._attack_item_bonus *= bonus_dict['Attack']
+        self._armour_item_bonus *= bonus_dict['Defence']
+        # hp percent restoration
         self.set_hp(self.get_maxhp() * hp_percent)
 
 #   Skills #
@@ -313,7 +329,6 @@ class Character:
                 skill.update_skill(self)
                 log += skill.use_skill(damage, attacker)
                 damage = skill.get_leftoverdamage()
-                # skill.reset()
                 if damage == 0:
                     break
             else:

@@ -22,7 +22,7 @@ class Item:
         """
         Returns item's name
         """
-        return f"{self.get_rarity()} {self.get_name()} {self.get_affix()}"
+        return f"{self.get_prefix()} {self.get_rarity()} {self.get_name()} {self.get_affix()}"
 
     def set_name(self, name):
         """
@@ -53,6 +53,12 @@ class Item:
         Returns item's affix
         """
         return self._item_affix
+
+    def get_prefix(self):
+        """
+        Returns item's affix
+        """
+        return self._item_prefix
 
     def set_type(self, new_type):
         """
@@ -108,7 +114,14 @@ class Item:
         """
         self._bonus_defence = bonus_defence
 
-    def create_item_dictionary(self, item_bonus, player_bonus):
+    def get_unique_bonus(self):
+        """
+        Returns item's unique bonus
+        """
+        return self._unique_bonus
+
+    @staticmethod
+    def create_item_dictionary(item_bonus, player_bonus):
         """
         Creating a dictionary to create item stats
         """
@@ -118,6 +131,8 @@ class Item:
                      'Boots': [0, 2 * item_bonus, item_bonus / 2, item_bonus / 2],
                      'Ring': [item_bonus, 3 * item_bonus, 2 * item_bonus, item_bonus / 2]
                      }
+        for k, item in item_dict.items():
+            item_dict[k] = [int(i) for i in item]
         return item_dict
 
     def print_stats(self):
@@ -133,6 +148,12 @@ class Item:
                 f"\nBonus HP:".ljust(15) + f"| {self._bonus_hp}" + \
                 f"\nBonus MP:".ljust(15) + f"| {self._bonus_mp}" + \
                 f"\nBonus Defence:".ljust(15) + f"| {self._bonus_defence}```"
+        if self.get_unique_bonus():
+            bonus_list = {'Double': 'Doubles this item main stat',
+                          'Shiny': 'Boosts this item stats',
+                          'Chiseled': f'All {self.get_unique_bonus()[0]} bonuses +{(self.get_unique_bonus()[1] - 1) * 100:1.0f}%',
+                          'Decorated': f'All items bonuses +{(self.get_unique_bonus()[1] - 1) * 100:1.0f}%'}
+            stats += f"```\nUnique bonus: ".ljust(15) + f"| {bonus_list[self.get_prefix()]}```"
         return stats
 
     def get_compare_stats(self, other_item):
@@ -156,6 +177,9 @@ class CommonItem(Item):
             self._type = random.choice(list(item_dict))
         item_stats = [random.randint(0, i) for i in item_dict[self._type]]
         self._item_affix = ''
+        self._item_prefix = ''
+        self._item_affix = ''
+        self._unique_bonus = None
         self._rarity = 'Common'
         super().__init__(*item_stats)
 
@@ -166,16 +190,53 @@ class RareItem(Item):
         player_bonus = random.randint(0, lvl+5)
         #                     ATTACK || HP || MP || DEFENSE
         item_dict = self.create_item_dictionary(item_bonus, player_bonus)
-        self._affixlist = ['of Damage', 'of Vitality', 'of Magic', 'of Defence', 'of Random']
+        affixlist = ['of Damage', 'of Vitality', 'of Magic', 'of Defence', 'of Random']
         if item_type:
             self._type = item_type
         else:
             self._type = random.choice(list(item_dict))
-        self._item_affix = random.choice(self._affixlist)
+        self._item_affix = random.choice(affixlist)
         self._rarity = 'Rare'
+        self._item_prefix = ''
+        self._unique_bonus = None
         item_stats = [random.randint(0, i) for i in item_dict[self._type]]
         if self._item_affix != 'of Random':
-            item_stats[self._affixlist.index(self._item_affix)] += random.randint(0, lvl+5)
+            item_stats[affixlist.index(self._item_affix)] += random.randint(0, item_bonus)
         else:
-            item_stats = (random.randint(0, lvl+5), random.randint(0, lvl+5), random.randint(0, lvl+5), random.randint(0, lvl+5))
+            item_stats = (random.randint(0, item_bonus), random.randint(0, item_bonus), random.randint(0, item_bonus),
+                          random.randint(0, item_bonus))
         super().__init__(*item_stats)
+
+
+class UniqueItem(Item):
+    def __init__(self, lvl, item_type=None):
+        item_bonus = 10 + lvl
+        player_bonus = random.randint(0, lvl + 10)
+        item_dict = self.create_item_dictionary(item_bonus, player_bonus)
+        affixlist = ['of Damage', 'of Vitality', 'of Magic', 'of Defence']
+        prefixlist = ['Double', 'Shiny', 'Chiseled', 'Decorated']
+        stat_dict = {0: 'Attack', 1: 'HP', 2: 'MP', 3: 'Defence'}
+        if item_type:
+            self._type = item_type
+        else:
+            self._type = random.choice(list(item_dict))
+        self._item_affix = random.choice(affixlist)
+        self._item_prefix = random.choice(prefixlist)
+        # self._item_prefix = 'Chiseled'
+        self._rarity = 'Unique'
+        item_stats = [random.randint(0, i) for i in item_dict[self._type]]
+        if self._item_prefix == 'Double':
+            item_stats[affixlist.index(self._item_affix)] += 2 * random.randint(0, item_bonus)
+        else:
+            item_stats[affixlist.index(self._item_affix)] += random.randint(0, item_bonus)
+        if self._item_prefix == 'Shiny':
+            item_stats = [int(x * 1.5) for x in item_stats]
+        if self._item_prefix == 'Chiseled':
+            self._unique_bonus = [stat_dict[affixlist.index(self._item_affix)], round(random.uniform(1.05, 1.05 + lvl * 0.01), 2)]
+        elif self._item_prefix == 'Decorated':
+            self._unique_bonus = ['All', 1.1]
+        else:
+            self._unique_bonus = [self._item_prefix, 0]
+        super().__init__(*item_stats)
+
+
