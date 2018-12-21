@@ -151,8 +151,8 @@ class Item:
         if self.get_unique_bonus():
             bonus_list = {'Double': 'Doubles this item main stat',
                           'Shiny': 'Boosts this item stats',
-                          'Chiseled': f'All {self.get_unique_bonus()[0]} bonuses +{(self.get_unique_bonus()[1] - 1) * 100:1.0f}%',
-                          'Decorated': f'All items bonuses +{(self.get_unique_bonus()[1] - 1) * 100:1.0f}%'}
+                          'Chiseled': f'All {self.get_unique_bonus()[0]} bonuses +{(self.get_unique_bonus()[1] - 1) * 100:1.1f}%',
+                          'Decorated': f'All items bonuses +{(self.get_unique_bonus()[1] - 1) * 100:1.1f}%'}
             stats += f"```\nUnique bonus: ".ljust(15) + f"| {bonus_list[self.get_prefix()]}```"
         return stats
 
@@ -232,7 +232,7 @@ class UniqueItem(Item):
         if self._item_prefix == 'Shiny':
             item_stats = [int(x * 1.5) for x in item_stats]
         if self._item_prefix == 'Chiseled':
-            self._unique_bonus = [stat_dict[affixlist.index(self._item_affix)], round(random.uniform(1.05, 1.05 + lvl * 0.01), 2)]
+            self._unique_bonus = [stat_dict[affixlist.index(self._item_affix)], round(random.uniform(1.05, 1.05 + lvl * 0.01), 3)]
         elif self._item_prefix == 'Decorated':
             self._unique_bonus = ['All', 1.1]
         else:
