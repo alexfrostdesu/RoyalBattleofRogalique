@@ -1,4 +1,4 @@
-from events import *
+from events import DialogMessage
 import math
 import random
 
@@ -256,7 +256,7 @@ class EnergyShield(DefenceSkill):
         """
         Returns skill's max es
         """
-        return self._owner_stats['MP'] * math.sqrt(self.get_owner_stats()['LVL'] * 2)
+        return self._owner_stats['MP'] * math.sqrt(self.get_owner_stats()['LVL'] * 4)
 
     def get_es(self):
         """
@@ -362,7 +362,7 @@ class WarriorBlood(DefenceSkill):
         super().__init__(character)
         self._name = 'Warrior Blood'
         self._leftoverdamage = 0
-        self._max_bonus = 0.5
+        self._max_bonus = 0.3
         self._defence_bonus = self.get_defence_bonus()
 
     def get_defence_bonus(self):

@@ -24,7 +24,6 @@ class Character:
         self._inventory = {'Armour': None, 'Weapon': None, 'Helm': None, 'Boots': None, 'Ring': None}
         self._attack_skills = []
         self._defence_skills = []
-        # self._passives = {}
         self._summons = []
         self._hp = self._maxhp = self.get_maxhp()
 
@@ -504,7 +503,7 @@ class Character:
 
 
 class Mage(Character):
-    _maxhp = 90
+    _maxhp = 100
     _mp = 10
     _attack = 8
 
@@ -513,8 +512,6 @@ class Mage(Character):
         self._cls = 'Mage'
         self.add_attack_skill(Fireball(self))
         self.add_defence_skill(EnergyShield(self))
-        # self._passives['Energy Shield'] = "This passive allows Mage to absorb some of incoming damage.\n" \
-        #                                   "ES scales with MP and lvl"
 
     def add_item(self, item):
         """
@@ -527,14 +524,6 @@ class Mage(Character):
                 item.set_name('Staff')
             super().add_item(item)
 
-    # def get_stats(self):
-    #     """
-    #     Prints character's stats
-    #     """
-    #     stats = super().get_stats()
-    #     stats['ES'] = self.get_defence_skills()[0].get_es()
-    #     return stats
-
 
 class Warrior(Character):
     hp_mult = 1.1
@@ -542,24 +531,7 @@ class Warrior(Character):
     def __init__(self):
         super().__init__()
         self._cls = 'Warrior'
-        self._hp = self.get_maxhp()
         self.add_defence_skill(WarriorBlood(self))
-        # self._passives['Warrior Blood'] = "This passive adds Warrior additional defence for every missing HP.\n"
-        # self._passives['Great Health'] = "This passive adds additional defence for Warrior.\n"
-
-#   HP modifier, but with passive #
-
-    def get_hp_modifier(self):
-        """
-        Returns character's attack modifier
-        """
-        return self._hp_item_bonus
-
-    def get_maxhp(self):
-        """
-        Returns character's maxhp
-        """
-        return (self._maxhp + self.get_hp_modifier()) * self.hp_mult
 
 #   Class specific methods modifications #
 
@@ -574,15 +546,6 @@ class Warrior(Character):
                 item.set_name('Sword')
             super().add_item(item)
 
-    # def get_stats(self):
-    #     """
-    #     Returns character's stats in a dictionary
-    #     """
-    #     stats = super().get_stats()
-    #     stats['DEF_BONUS'] = self.get_passive_defence_bonus()
-    #     stats['HP_BONUS'] = self.hp_mult
-    #     return stats
-
 
 class Rogue(Character):
     _attack = 12
@@ -593,10 +556,6 @@ class Rogue(Character):
         self._cls = 'Rogue'
         self.add_attack_skill(CriticalStrike(self))
         self.add_defence_skill(Evasion(self))
-        # self._passives['Evasion'] = "This passive allows Rogue to evade some of incoming damage.\n" \
-        #                             "EV scales with MP"
-        # self._passives['Critical Strike'] = "This passive allows Rogue to double the damage some of his attacks.\n" \
-        #                                     "Crit chance scales with MP"
 
     def add_item(self, item):
         """
@@ -609,41 +568,69 @@ class Rogue(Character):
                 item.set_name('Dagger')
             super().add_item(item)
 
-    # def get_stats(self):
-    #     """
-    #     Returns character's stats in a dictionary
-    #     """
-    #     stats = super().get_stats()
-    #     stats['EV_CHANCE'] = self.get_evasion()
-    #     stats['CRIT_CHANCE'] = self.get_crit_chance()
-    #     return stats
+
+# class Enemy(Character):
+#     def __init__(self, mult):
+#         super().__init__()
 
 
 class Monster(Character):
     def __init__(self, lvl_mult=1):
         super().__init__()
         self._cls = 'Monster'
-        self._lvl_mult = lvl_mult * 2 / math.sqrt(lvl_mult * 3)
-        self._maxhp = (random.randint(16, 40) * self._lvl_mult)
+        lvl_mult /= 10
+        self._lvl_mult = (-3 / (lvl_mult + 1)) + 4
+        self._maxhp = (random.randint(15, 20) * self._lvl_mult)
         self._hp = self.get_maxhp()
         self._mp = (random.randint(1, 1) * self._lvl_mult)
         self._attack = (random.randint(5, 10) * self._lvl_mult)
         self._armour = 5 * random.uniform(1, 2)
-        # self.add_summon(Character())
 
 
-class GreaterMonster(Monster):
+class GreaterMonster(Character):
     def __init__(self, lvl_mult=1):
-        lvl_mult *= 2
-        super().__init__(lvl_mult)
+        super().__init__()
         self._cls = 'Greater Monster'
-        self.add_item(RareItem(int(lvl_mult), 'Helm'))
-        self.add_item(RareItem(int(lvl_mult), 'Weapon'))
-        self.add_item(RareItem(int(lvl_mult), 'Boots'))
-        self.add_item(RareItem(int(lvl_mult), 'Armour'))
-        self.add_item(RareItem(int(lvl_mult), 'Ring'))
+        lvl_mult /= 10
+        self._lvl_mult = (-3 / (lvl_mult + 1)) + 5
+        self._maxhp = (random.randint(20, 40) * self._lvl_mult)
         self._hp = self.get_maxhp()
-        self._mp = self.get_mp()
-        if random.random() > 0.3:
+        self._mp = (random.randint(1, 1) * self._lvl_mult)
+        self._attack = (random.randint(10, 15) * self._lvl_mult)
+        self._armour = 5 * random.uniform(1, 3)
+        if random.random() > 0.5:
             self.add_attack_skill(VoidStrike(self))
         self.update_skills()
+
+
+class ChampionMonster(Character):
+    def __init__(self, lvl_mult=1):
+        super().__init__()
+        self._cls = 'Champion Monster'
+        lvl_mult /= 10
+        self._lvl_mult = (-3 / (lvl_mult + 1)) + 5
+        self._maxhp = (random.randint(30, 60) * self._lvl_mult)
+        self._hp = self.get_maxhp()
+        self._mp = (random.randint(5, 20) * self._lvl_mult)
+        self._attack = (random.randint(15, 30) * self._lvl_mult)
+        self._armour = 5 * random.uniform(1, 4)
+        skills = [Fireball, VoidStrike]
+        self.add_attack_skill(random.choice(skills)(self))
+        skills = [Evasion, EnergyShield]
+        self.add_defence_skill(random.choice(skills)(self))
+        self.update_skills()
+
+
+class Summoner(Character):
+    def __init__(self, lvl_mult=1):
+        super().__init__()
+        self._cls = 'Champion Monster'
+        lvl_mult /= 10
+        self._lvl_mult = (-3 / (lvl_mult + 1)) + 5
+        self._maxhp = (random.randint(20, 40) * self._lvl_mult)
+        self._hp = self.get_maxhp()
+        self._mp = (random.randint(1, 1) * self._lvl_mult)
+        self._attack = (random.randint(5, 30) * self._lvl_mult)
+        self._armour = 5 * random.uniform(1, 3)
+        self.add_summon(Monster(lvl_mult * 10))
+        self.add_summon(Monster(lvl_mult * 10))
