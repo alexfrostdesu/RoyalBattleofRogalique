@@ -44,6 +44,7 @@ class BotHandler:
         chat and user id - send to who
         """
         response = requests.post(self._url + "sendMessage", {'text': text, 'chat_id': chat_id, 'from': user_id, 'parse_mode': 'Markdown', 'reply_markup': keyboard})
+        print(response)
         return response
 
     def send_messages(self, messages):

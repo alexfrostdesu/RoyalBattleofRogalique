@@ -354,14 +354,13 @@ class Game:
                     battle_log += char.attack(self.playerchar)
             if not self.playerchar.is_alive():
                 battle_log += DialogMessage('won_C', {'char': enemy_char.get_class()}).get_message()
+                battle_log += DialogMessage('dead').get_message() + '\n'
+                battle_log += DialogMessage('end_game').get_message() + '\n'
                 self.enqueue_message(
                     battle_log, self._chat_id, self._player_id, self._keyboard)
-                self.enqueue_message(DialogMessage(
-                    'dead').get_message(), self._chat_id, self._player_id, self._keyboard)
                 # user_list.pop(self._player_id['id'])  # deleting user character
                 self._enemy = self._boss = None
-                self.enqueue_message(DialogMessage(
-                    'end_game').get_message(), self._chat_id, self._player_id, self._keyboard)
+                self._act = 1
                 # this needs to be reworked
                 self.set_state('Game Start')
                 self.enqueue_message(
