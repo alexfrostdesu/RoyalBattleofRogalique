@@ -220,7 +220,7 @@ class Game:
                     }
         if act > max(act_list.keys()):
             act = max(act_list.keys())  # don't forget to change that!
-        boss = act_list[act]['Boss'](act + 2)
+        boss = act_list[act]['Boss'](act + 1)
         for item in act_list[act]['Items']:
             boss.add_item(item)
         boss.update_skills()
@@ -353,7 +353,7 @@ class Game:
                 if char.is_alive():
                     battle_log += char.attack(self.playerchar)
             if not self.playerchar.is_alive():
-                battle_log += DialogMessage('won_C', {'char': enemy_char.get_class()}).get_message()
+                battle_log += DialogMessage('won_C', {'char': enemy_char.get_class()}).get_message() + '\n'
                 battle_log += DialogMessage('dead').get_message() + '\n'
                 battle_log += DialogMessage('end_game').get_message() + '\n'
                 self.enqueue_message(
@@ -573,6 +573,7 @@ class GameManager():
         Takes a list of messages
         Merges every subsequent message to one player, into bigger message
         """
+        print("before merge", messages)
         from itertools import groupby
         result = []
         separator = "\n\n"
@@ -587,6 +588,7 @@ class GameManager():
                 if message.keyboard:
                     keyboard = message.keyboard
             result.append(OutMessage(res, key, key, keyboard))
+        print("after merge", result)
         return result
 
     def start_new_game(self, chat_id, player_id):

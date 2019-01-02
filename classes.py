@@ -578,8 +578,7 @@ class Monster(Character):
     def __init__(self, lvl_mult=1):
         super().__init__()
         self._cls = 'Monster'
-        lvl_mult /= 10
-        self._lvl_mult = (-3 / (lvl_mult + 1)) + 4
+        self._lvl_mult = (math.log10(lvl_mult/2) + 1)
         self._maxhp = (random.randint(15, 20) * self._lvl_mult)
         self._hp = self.get_maxhp()
         self._mp = (random.randint(1, 1) * self._lvl_mult)
@@ -591,8 +590,7 @@ class GreaterMonster(Character):
     def __init__(self, lvl_mult=1):
         super().__init__()
         self._cls = 'Greater Monster'
-        lvl_mult /= 10
-        self._lvl_mult = (-3 / (lvl_mult + 1)) + 5
+        self._lvl_mult = (-3 / (lvl_mult + 1)) + 8
         self._maxhp = (random.randint(20, 40) * self._lvl_mult)
         self._hp = self.get_maxhp()
         self._mp = (random.randint(1, 1) * self._lvl_mult)
@@ -607,8 +605,8 @@ class ChampionMonster(Character):
     def __init__(self, lvl_mult=1):
         super().__init__()
         self._cls = 'Champion Monster'
-        lvl_mult /= 10
-        self._lvl_mult = (-3 / (lvl_mult + 1)) + 5
+        # lvl_mult /= 10
+        self._lvl_mult = (-3 / (lvl_mult + 1)) + 10
         self._maxhp = (random.randint(30, 60) * self._lvl_mult)
         self._hp = self.get_maxhp()
         self._mp = (random.randint(5, 20) * self._lvl_mult)

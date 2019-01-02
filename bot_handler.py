@@ -1,4 +1,4 @@
-import requests, asyncio, aiohttp
+import requests, asyncio, aiohttp, time
 
 class BotHandler:
     def __init__(self, token):
@@ -50,6 +50,7 @@ class BotHandler:
     def send_messages(self, messages):
         for message in messages:
             self.send_message(message.text, message.chat_id, message.player_id, message.keyboard)
+            time.sleep(1)
 
     async def send_message_async(self, text, chat_id, user_id, keyboard=None):
         async with aiohttp.ClientSession() as session:
