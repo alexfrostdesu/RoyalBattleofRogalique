@@ -229,8 +229,9 @@ class Character:
         self._mp += 1
         self._attack += 1
         self._exp = 0
-        self.reset_skills()
         self.update_skills()
+        self.reset_skills()
+
 
 #   Items and inventory #
 
