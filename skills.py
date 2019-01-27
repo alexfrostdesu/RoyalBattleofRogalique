@@ -138,7 +138,7 @@ class Fireball(AttackSkill):
         """
         Returns spell's damage
         """
-        return self.get_owner_stats()['MP'] * 1.5
+        return self.get_owner_stats()['MP'] * 1.3
 
 
 class VoidStrike(AttackSkill):
@@ -256,7 +256,7 @@ class EnergyShield(DefenceSkill):
         """
         Returns skill's max es
         """
-        return self._owner_stats['MP'] * math.sqrt(self.get_owner_stats()['LVL'] * 4)
+        return self._owner_stats['MP'] * math.sqrt(self.get_owner_stats()['LVL'] * 3)
 
     def get_es(self):
         """
@@ -362,7 +362,7 @@ class WarriorBlood(DefenceSkill):
         super().__init__(character)
         self._name = 'Warrior Blood'
         self._leftoverdamage = 0
-        self._max_bonus = 0.3
+        self._max_bonus = 0.4
         self._defence_bonus = self.get_defence_bonus()
 
     def get_defence_bonus(self):

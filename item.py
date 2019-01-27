@@ -22,7 +22,12 @@ class Item:
         """
         Returns item's name
         """
-        return f"{self.get_prefix()} {self.get_rarity()} {self.get_name()} {self.get_affix()}"
+        name = f"{self.get_rarity()} {self.get_name()}"
+        if self.get_affix():
+            name += f" {self.get_affix()}"
+        if self.get_prefix():
+            name = f"{self.get_prefix()} " + name
+        return name
 
     def set_name(self, name):
         """

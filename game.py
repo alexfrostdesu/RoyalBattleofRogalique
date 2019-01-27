@@ -342,7 +342,7 @@ class Game:
                     battle_log, self._chat_id, self._player_id, self._keyboard)
                 for skill in self.playerchar.get_attack_skills():
                     skill.set_current_cd(0)
-                self.won_battle(enemy_char)
+                self.won_battle(enemy)
                 if enemy['Type'] == 'Boss':
                     self._act += 1
                     self._boss = None
@@ -373,11 +373,15 @@ class Game:
         """
         After battle is won, hero gets his reward
         """
-        is_lvlup = self.playerchar.add_exp(enemy.get_maxhp())
+        enemy_char = enemy['Enemy']
+        enemy_type = enemy['Type']
+        is_lvlup = self.playerchar.add_exp(enemy_char.get_maxhp())
         if is_lvlup:
             self.enqueue_message(is_lvlup, self._chat_id, self._player_id, self._keyboard)
-        self.playerchar.set_gold(
-                self.playerchar.get_gold() + int(enemy.get_attack()))  # gold drop
+        gold = int(enemy_char.get_attack())
+        if enemy_type == 'Boss':
+            gold *= 2
+        self.playerchar.set_gold(self.playerchar.get_gold() + gold)  # gold drop
         self.check_drop(enemy)  # checking for item drop
 
     def check_drop(self, enemy):
@@ -387,7 +391,7 @@ class Game:
         # healing potion in a dire need of rewrite
         if self.roll(5):
             hp = 'Healing Potion'
-            item_healing = random.randint(10, int(enemy.get_maxhp()))
+            item_healing = random.randint(1, int(self.playerchar.get_maxhp()/3))
             self.enqueue_message(f"You found a *{hp}*!\n" +
                                  DialogMessage(
                                      'healed_CA',
@@ -395,7 +399,21 @@ class Game:
                                  self._chat_id, self._player_id)
             self.playerchar.heal(item_healing)
 
-        #   Lazy copypaste 2 lines at a time #
+        enemy_char = enemy['Enemy']
+        enemy_type = enemy['Type']
+
+        if enemy_type == 'Boss':
+            self.item_drop = [random.choice(list(enemy_char.get_inventory().values()))]
+        else:
+            self.item_drop = []
+
+        def unique_drop(chance):
+            """
+            Rare drop roll method
+            Adds drop to item_drop if chance is succesfull
+            """
+            if random.random() < chance:
+                self.item_drop.append(UniqueItem(self.playerchar.get_lvl()))
 
         def rare_drop(chance):
             """
@@ -413,9 +431,12 @@ class Game:
             if random.random() < chance:
                 self.item_drop.append(CommonItem(self.playerchar.get_lvl()))
 
-        self.item_drop = []
-        enemy_score = enemy.get_maxhp() + enemy.get_attack()
-        if enemy_score > 200:
+        enemy_score = enemy_char.get_maxhp() + enemy_char.get_attack()
+        if enemy_score > 250:
+            unique_drop(0.5)
+        elif enemy_score > 200:
+            rare_drop(0.8)
+        elif enemy_score > 200:
             rare_drop(0.8)
         elif enemy_score > 150:
             rare_drop(0.5)
@@ -448,17 +469,14 @@ class Game:
         """
         Processing all the drops, and prompting to choose equip item or not
         """
-        self.item = self.item_drop[0]
-        self.enqueue_message(DialogMessage('found_item_I', {'item': self.item.get_name()}).get_message(
-        ) + "\n" + self.item.get_stats(), self._chat_id, self._player_id, self._keyboard)
+        self.item = self.item_drop[0]  # selecting first available item
+        log = DialogMessage('found_item_I', {'item': self.item.get_name()}).get_message() + "\n" + self.item.get_stats()
         if self.playerchar.get_inventory()[self.item.get_type()]:
             playeritem = self.playerchar.get_inventory()[self.item.get_type()]
-            self.enqueue_message(
-                f"Comparing to your *{playeritem.get_full_name()}*:", self._chat_id, self._player_id, self._keyboard)
-            self.enqueue_message(self.item.get_compare_stats(
-                playeritem), self._chat_id, self._player_id, self._keyboard)
-        self.enqueue_message(DialogMessage(
-            'equip_item').get_message(), self._chat_id, self._player_id, self._keyboard)
+            log += f"Comparing to your *{playeritem.get_full_name()}*:"
+            log += self.item.get_compare_stats(playeritem)
+        log += DialogMessage('equip_item').get_message()
+        self.enqueue_message(log, self._chat_id, self._player_id, self._keyboard)
         self.item_drop.pop(0)  # deleting first available item
 
     def item_choice(self, message):
@@ -469,7 +487,7 @@ class Game:
         if message not in self.get_state_input():
             self.enqueue_message('Please input correct command',
                                  self._chat_id, self._player_id)
-            self.enqueue_message(DialogMessage(
+            self.enqueue_message(self.item.get_stats() + "\n\n" + DialogMessage(
                 'equip_item').get_message(), self._chat_id, self._player_id, self._keyboard)
         else:
             if message == 'Equip':  # adds item to playerchar inventory
@@ -523,8 +541,8 @@ class Game:
                 else:
                     self.enqueue_message('Not enough gold', self._chat_id, self._player_id, self._keyboard)
             if message == 'Attack Boost':
-                if self.playerchar.get_gold() >= 1000:
-                    self.playerchar.spend_gold(1000)
+                if self.playerchar.get_gold() >= 500:
+                    self.playerchar.spend_gold(500)
                     self.playerchar.set_attack(self.playerchar._attack + 10)
                     self.enqueue_message(
                         'Attack Boosted', self._chat_id, self._player_id, self._keyboard)
@@ -533,8 +551,8 @@ class Game:
                     self.enqueue_message(
                         'Not enough gold', self._chat_id, self._player_id, self._keyboard)
             if message == 'Magic Boost':
-                if self.playerchar.get_gold() >= 1000:
-                    self.playerchar.spend_gold(1000)
+                if self.playerchar.get_gold() >= 500:
+                    self.playerchar.spend_gold(500)
                     self.enqueue_message(
                         'MP Boosted', self._chat_id, self._player_id, self._keyboard)
                     self.send_stats(self.playerchar)

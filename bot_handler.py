@@ -45,6 +45,8 @@ class BotHandler:
         """
         response = requests.post(self._url + "sendMessage", {'text': text, 'chat_id': chat_id, 'from': user_id, 'parse_mode': 'Markdown', 'reply_markup': keyboard})
         print(response)
+        if response.status_code != 200:
+            time.sleep(1)
         return response
 
     def send_messages(self, messages):

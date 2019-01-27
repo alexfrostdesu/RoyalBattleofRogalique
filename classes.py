@@ -578,11 +578,11 @@ class Monster(Character):
     def __init__(self, lvl_mult=1):
         super().__init__()
         self._cls = 'Monster'
-        self._lvl_mult = (math.log10(lvl_mult/2) + 1)
+        self._lvl_mult = math.log10(lvl_mult/2) + 1
         self._maxhp = (random.randint(15, 20) * self._lvl_mult)
         self._hp = self.get_maxhp()
         self._mp = (random.randint(1, 1) * self._lvl_mult)
-        self._attack = (random.randint(5, 10) * self._lvl_mult)
+        self._attack = (random.randint(7, 12) * self._lvl_mult)
         self._armour = 5 * random.uniform(1, 2)
 
 
@@ -590,7 +590,7 @@ class GreaterMonster(Character):
     def __init__(self, lvl_mult=1):
         super().__init__()
         self._cls = 'Greater Monster'
-        self._lvl_mult = (-3 / (lvl_mult + 1)) + 8
+        self._lvl_mult = math.log10(lvl_mult/2) + 2
         self._maxhp = (random.randint(20, 40) * self._lvl_mult)
         self._hp = self.get_maxhp()
         self._mp = (random.randint(1, 1) * self._lvl_mult)
@@ -606,11 +606,11 @@ class ChampionMonster(Character):
         super().__init__()
         self._cls = 'Champion Monster'
         # lvl_mult /= 10
-        self._lvl_mult = (-3 / (lvl_mult + 1)) + 10
-        self._maxhp = (random.randint(30, 60) * self._lvl_mult)
+        self._lvl_mult = math.log10(lvl_mult/2) + 3
+        self._maxhp = (random.randint(20, 40) * self._lvl_mult)
         self._hp = self.get_maxhp()
-        self._mp = (random.randint(5, 20) * self._lvl_mult)
-        self._attack = (random.randint(15, 30) * self._lvl_mult)
+        self._mp = (random.randint(5, 10) * self._lvl_mult)
+        self._attack = (random.randint(10, 20) * self._lvl_mult)
         self._armour = 5 * random.uniform(1, 4)
         skills = [Fireball, VoidStrike]
         self.add_attack_skill(random.choice(skills)(self))
@@ -624,11 +624,11 @@ class Summoner(Character):
         super().__init__()
         self._cls = 'Champion Monster'
         lvl_mult /= 10
-        self._lvl_mult = (-3 / (lvl_mult + 1)) + 5
-        self._maxhp = (random.randint(20, 40) * self._lvl_mult)
+        self._lvl_mult = math.log10(lvl_mult/2) + 3
+        self._maxhp = (random.randint(10, 30) * self._lvl_mult)
         self._hp = self.get_maxhp()
         self._mp = (random.randint(1, 1) * self._lvl_mult)
-        self._attack = (random.randint(5, 30) * self._lvl_mult)
+        self._attack = (random.randint(5, 20) * self._lvl_mult)
         self._armour = 5 * random.uniform(1, 3)
         self.add_summon(Monster(lvl_mult * 10))
         self.add_summon(Monster(lvl_mult * 10))
