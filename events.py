@@ -12,12 +12,12 @@ class DialogMessage:
     def get_message(self):
         messages = dict(
             stats="Your character's stats",
-            start_game="*Select your character*:\n" + "```\nMage \nWarrior \nRogue```",
-            base="Do you want to go and kill some monsters? *(Y/I/S)*\n" + "```\nY - Go and find some monsters \nI - Show inventory \nS - Show stats \nB - Go to shop```",
-            attack_enemy="Do you want to attack? *(Y/N)*\n" + "```\nY - Attack the enemy \nN - Retreat to base```",
+            start_game="*Select your character*:\n",
+            base="Do you want to go and kill some monsters? \n" + "```\nGo and find some monsters \nShow inventory \nShow stats \nGo to shop```",
+            attack_enemy="Do you want to attack? \n" + "```\nAttack the enemy \nRetreat to base```",
             end_game="Your adventure ends here.",
             dead="Your character is dead.",
-            equip_item="Would you like to equip item? *(E/N)*\n" + "```\nE - Equip Item \nN - Discard Item```")
+            equip_item="Would you like to equip item? \n" + "```\nEquip Item \nDiscard Item```")
         if self._character != '' or self._item != '':
             action_messages = dict(
                 attack_CAT=f"*{self._character}* attacked *{self._target}* for *{self._amount} HP* damage!",
@@ -30,7 +30,7 @@ class DialogMessage:
                 evaded_CA=f"*{self._character}* evaded *{self._amount}* damage!",
                 crit="Critical hit!",
                 lvlup_CA=f"*{self._character}* got a level up! Your level is now {self._amount}\n",
-                healed_CA=f"{self._character} was healed for {self._amount} HP",
+                healed_CA=f"{self._character} was healed for a {self._amount} HP",
                 won_C=f"{self._character} has won the battle!",
                 lost_C=f"{self._character} has lost the battle!",
                 dead_C=f"{self._character} is dead.",
@@ -94,11 +94,11 @@ class StatusMessage:
         msg = "*Welcome to the shop!*\n" \
               f"Current gold: {self._character.get_gold()} \n" \
                "What would you like to buy? *(HP/SP/MP/A/M)*\n" \
-               f"`HP -  HP refill:     {player_max_hp - player_hp:1.0f} gold`\n" \
-                "`SP -  Small Potion:  10 gold` \n" \
-                "`MP -  Medium Potion: 100 gold` \n" \
-                "`A  -  Attack boost:  1000 gold` \n" \
-                "`M  -  MP boost:      1000 gold` \n" \
+               f"`HP refill:     {player_max_hp - player_hp:1.0f} gold`\n" \
+                "`Small Potion:  10 gold` \n" \
+                "`Medium Potion: 100 gold` \n" \
+                "`Attack boost:  500 gold` \n" \
+                "`MP boost:      500 gold` \n" \
                 "Type *E* to exit shop"
         return msg
 

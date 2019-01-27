@@ -24,7 +24,7 @@ class Character:
         self._inventory = {'Armour': None, 'Weapon': None, 'Helm': None, 'Boots': None, 'Ring': None}
         self._attack_skills = []
         self._defence_skills = []
-        self._passives = {}
+        self._summons = []
         self._hp = self._maxhp = self.get_maxhp()
 
 #   Class getters and setters #
@@ -64,6 +64,7 @@ class Character:
     def set_hp(self, hp):
         """
         Takes new value for character's hp and sets it
+        Can't be higher than maxhp
         """
         if 0 < hp <= self.get_maxhp():
             self._hp = hp
@@ -228,8 +229,9 @@ class Character:
         self._mp += 1
         self._attack += 1
         self._exp = 0
-        self.reset_skills()
         self.update_skills()
+        self.reset_skills()
+
 
 #   Items and inventory #
 
@@ -259,14 +261,30 @@ class Character:
         self._mp_item_bonus = 0
         self._attack_item_bonus = 0
         self._armour_item_bonus = 0
+        bonus_dict = {'Attack': 1, 'HP': 1, 'MP': 1, 'Defence': 1}
         for i in range(0, len(self._inventory)):
             slot = list(self._inventory)[i]
             item = self._inventory[slot]
             if item is not None:
-                self.set_hp_item_bonus(self.get_hp_modifier() + item.get_bonus_hp())
+                self._hp_item_bonus += item.get_bonus_hp()
                 self._mp_item_bonus += item.get_bonus_mp()
                 self._attack_item_bonus += item.get_bonus_attack()
                 self._armour_item_bonus += item.get_bonus_defence()
+                # unique bonus check
+                if item.get_unique_bonus():
+                    unique_bonus_type = item.get_unique_bonus()[0]  # rewrite that sometime
+                    unique_bonus_value = item.get_unique_bonus()[1]  # rewrite that sometime
+                    if unique_bonus_type == 'All':
+                        for stat in bonus_dict.keys():
+                            bonus_dict[stat] *= unique_bonus_value
+                    elif unique_bonus_type in bonus_dict.keys():
+                        bonus_dict[unique_bonus_type] *= unique_bonus_value
+        # unique bonus application
+        self._hp_item_bonus *= bonus_dict['HP']
+        self._mp_item_bonus *= bonus_dict['MP']
+        self._attack_item_bonus *= bonus_dict['Attack']
+        self._armour_item_bonus *= bonus_dict['Defence']
+        # hp percent restoration
         self.set_hp(self.get_maxhp() * hp_percent)
 
 #   Skills #
@@ -311,7 +329,6 @@ class Character:
                 skill.update_skill(self)
                 log += skill.use_skill(damage, attacker)
                 damage = skill.get_leftoverdamage()
-                # skill.reset()
                 if damage == 0:
                     break
             else:
@@ -380,9 +397,9 @@ class Character:
         Takes pure damage
         """
         self._hp -= damage
-        output = DialogMessage('attack_pure_CAT', {'char': attacker, 'amount': damage,
-                                                   'target': self.get_class()}).get_message() + "\n"
-        return output
+        log = DialogMessage('attack_pure_CAT', {'char': attacker, 'amount': damage,
+                                                'target': self.get_class()}).get_message() + "\n"
+        return log
 
     def attack(self, target):
         """
@@ -390,6 +407,10 @@ class Character:
         """
         output = None
         log = ''
+        if next((summon for summon in target.get_summons() if summon.is_alive()), None):
+            attack_target = next(summon for summon in target.get_summons() if summon.is_alive())
+        else:
+            attack_target = target
         for skill in self.get_attack_skills():
             if skill.is_available():
                 skill.update_skill(self)
@@ -401,11 +422,33 @@ class Character:
         if output is None:
             attack = self.get_attack() * self.get_attack_modifier()
             output = {'Damage': attack, 'Type': 'Normal'}
-        damage_types = {'Normal': target.take_damage_normal,
-                        'Magic': target.take_damage_magic,
-                        'Pure': target.take_damage_pure}
+        damage_types = {'Normal': attack_target.take_damage_normal,
+                        'Magic': attack_target.take_damage_magic,
+                        'Pure': attack_target.take_damage_pure}
         log += damage_types[output['Type']](output['Damage'], self.get_class())
         return log
+
+#   Healing #
+
+    def heal(self, amount):
+        """
+        Heals character for amount hp
+        """
+        self.set_hp(self.get_current_hp() + amount)
+
+#   Summons #
+
+    def get_summons(self):
+        """
+        Returns character's summons list
+        """
+        return self._summons
+
+    def add_summon(self, summon):
+        """
+        Adds summon to character's summons list
+        """
+        self._summons.append(summon)
 
 #   Getting character's stats #
 
@@ -424,10 +467,7 @@ class Character:
                      EXP=self.get_exp(),
                      EXPLVL=self.get_exp_to_next_lvl(),
                      GOLD=self.get_gold(),
-                     INV=self.get_inventory(),
-                     # ATT_SKL=self.get_attack_skills(),
-                     # DEF_SKL=self.get_defence_skills(),
-                     PASSIVES=self.get_passives())
+                     INV=self.get_inventory())
         return stats
 
 #   testing used stuff #
@@ -464,7 +504,7 @@ class Character:
 
 
 class Mage(Character):
-    _maxhp = 90
+    _maxhp = 100
     _mp = 10
     _attack = 8
 
@@ -473,8 +513,6 @@ class Mage(Character):
         self._cls = 'Mage'
         self.add_attack_skill(Fireball(self))
         self.add_defence_skill(EnergyShield(self))
-        self._passives['Energy Shield'] = "This passive allows Mage to absorb some of incoming damage.\n" \
-                                          "ES scales with MP and lvl"
 
     def add_item(self, item):
         """
@@ -487,14 +525,6 @@ class Mage(Character):
                 item.set_name('Staff')
             super().add_item(item)
 
-    # def get_stats(self):
-    #     """
-    #     Prints character's stats
-    #     """
-    #     stats = super().get_stats()
-    #     stats['ES'] = self.get_defence_skills()[0].get_es()
-    #     return stats
-
 
 class Warrior(Character):
     hp_mult = 1.1
@@ -502,24 +532,7 @@ class Warrior(Character):
     def __init__(self):
         super().__init__()
         self._cls = 'Warrior'
-        self._hp = self.get_maxhp()
         self.add_defence_skill(WarriorBlood(self))
-        self._passives['Warrior Blood'] = "This passive adds Warrior additional defence for every missing HP.\n"
-        self._passives['Great Health'] = "This passive adds additional defence for Warrior.\n"
-
-#   HP modifier, but with passive #
-
-    def get_hp_modifier(self):
-        """
-        Returns character's attack modifier
-        """
-        return self._hp_item_bonus
-
-    def get_maxhp(self):
-        """
-        Returns character's maxhp
-        """
-        return (self._maxhp + self.get_hp_modifier()) * self.hp_mult
 
 #   Class specific methods modifications #
 
@@ -534,15 +547,6 @@ class Warrior(Character):
                 item.set_name('Sword')
             super().add_item(item)
 
-    # def get_stats(self):
-    #     """
-    #     Returns character's stats in a dictionary
-    #     """
-    #     stats = super().get_stats()
-    #     stats['DEF_BONUS'] = self.get_passive_defence_bonus()
-    #     stats['HP_BONUS'] = self.hp_mult
-    #     return stats
-
 
 class Rogue(Character):
     _attack = 12
@@ -553,10 +557,6 @@ class Rogue(Character):
         self._cls = 'Rogue'
         self.add_attack_skill(CriticalStrike(self))
         self.add_defence_skill(Evasion(self))
-        self._passives['Evasion'] = "This passive allows Rogue to evade some of incoming damage.\n" \
-                                    "EV scales with MP"
-        self._passives['Critical Strike'] = "This passive allows Rogue to double the damage some of his attacks.\n" \
-                                            "Crit chance scales with MP"
 
     def add_item(self, item):
         """
@@ -569,38 +569,67 @@ class Rogue(Character):
                 item.set_name('Dagger')
             super().add_item(item)
 
-    # def get_stats(self):
-    #     """
-    #     Returns character's stats in a dictionary
-    #     """
-    #     stats = super().get_stats()
-    #     stats['EV_CHANCE'] = self.get_evasion()
-    #     stats['CRIT_CHANCE'] = self.get_crit_chance()
-    #     return stats
+
+# class Enemy(Character):
+#     def __init__(self, mult):
+#         super().__init__()
 
 
 class Monster(Character):
     def __init__(self, lvl_mult=1):
         super().__init__()
         self._cls = 'Monster'
-        self._lvl_mult = lvl_mult * 2 / math.sqrt(lvl_mult * 3)
-        self._maxhp = (random.randint(16, 40) * self._lvl_mult)
+        self._lvl_mult = math.log10(lvl_mult/2) + 1
+        self._maxhp = (random.randint(15, 20) * self._lvl_mult)
         self._hp = self.get_maxhp()
         self._mp = (random.randint(1, 1) * self._lvl_mult)
-        self._attack = (random.randint(5, 10) * self._lvl_mult)
+        self._attack = (random.randint(7, 12) * self._lvl_mult)
         self._armour = 5 * random.uniform(1, 2)
 
 
-class GreaterMonster(Monster):
+class GreaterMonster(Character):
     def __init__(self, lvl_mult=1):
-        lvl_mult *= 1.5
-        super().__init__(lvl_mult)
+        super().__init__()
         self._cls = 'Greater Monster'
-        self.add_item(RareItem(int(lvl_mult/2)))
-        self.add_item(RareItem(int(lvl_mult/2)))
-        self.add_item(RareItem(int(lvl_mult/2)))
-        self.add_item(RareItem(int(lvl_mult/2)))
+        self._lvl_mult = math.log10(lvl_mult/2) + 2
+        self._maxhp = (random.randint(20, 40) * self._lvl_mult)
         self._hp = self.get_maxhp()
-        self._mp = self.get_mp()
+        self._mp = (random.randint(1, 1) * self._lvl_mult)
+        self._attack = (random.randint(10, 15) * self._lvl_mult)
+        self._armour = 5 * random.uniform(1, 3)
         if random.random() > 0.5:
             self.add_attack_skill(VoidStrike(self))
+        self.update_skills()
+
+
+class ChampionMonster(Character):
+    def __init__(self, lvl_mult=1):
+        super().__init__()
+        self._cls = 'Champion Monster'
+        # lvl_mult /= 10
+        self._lvl_mult = math.log10(lvl_mult/2) + 3
+        self._maxhp = (random.randint(20, 40) * self._lvl_mult)
+        self._hp = self.get_maxhp()
+        self._mp = (random.randint(5, 10) * self._lvl_mult)
+        self._attack = (random.randint(10, 20) * self._lvl_mult)
+        self._armour = 5 * random.uniform(1, 4)
+        skills = [Fireball, VoidStrike]
+        self.add_attack_skill(random.choice(skills)(self))
+        skills = [Evasion, EnergyShield]
+        self.add_defence_skill(random.choice(skills)(self))
+        self.update_skills()
+
+
+class Summoner(Character):
+    def __init__(self, lvl_mult=1):
+        super().__init__()
+        self._cls = 'Champion Monster'
+        lvl_mult /= 10
+        self._lvl_mult = math.log10(lvl_mult/2) + 3
+        self._maxhp = (random.randint(10, 30) * self._lvl_mult)
+        self._hp = self.get_maxhp()
+        self._mp = (random.randint(1, 1) * self._lvl_mult)
+        self._attack = (random.randint(5, 20) * self._lvl_mult)
+        self._armour = 5 * random.uniform(1, 3)
+        self.add_summon(Monster(lvl_mult * 10))
+        self.add_summon(Monster(lvl_mult * 10))
