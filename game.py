@@ -365,6 +365,7 @@ class Game:
                 # user_list.pop(self._player_id['id'])  # deleting user character
                 self._enemy = self._boss = None
                 self._act = 1
+                print(f"Game ended for {self._chat_id, self._player_id} by {enemy.get_cls(), enemy.get_lvl()}")
                 # this needs to be reworked
                 self.set_state('Game Start')
                 self.enqueue_message(
@@ -597,7 +598,7 @@ class GameManager():
         Takes a list of messages
         Merges every subsequent message to one player, into bigger message
         """
-        print("before merge", messages)
+        # print("before merge", messages)
         from itertools import groupby
         result = []
         separator = "\n\n"
@@ -612,12 +613,13 @@ class GameManager():
                 if message.keyboard:
                     keyboard = message.keyboard
             result.append(OutMessage(res, key, key, keyboard))
-        print("after merge", result)
+        # print("after merge", result)
         return result
 
     def start_new_game(self, chat_id, player_id):
         """Starts a new game, and returns appropriate messages"""
         self.user_list[player_id] = Game(chat_id, player_id)
+        print(f"Game started for {chat_id, player_id}")
         keyboard = json.dumps(
             {'keyboard': [['Mage', 'Warrior', 'Rogue']], 'one_time_keyboard': False, 'resize_keyboard': True})
         return [OutMessage(
