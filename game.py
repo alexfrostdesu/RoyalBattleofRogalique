@@ -209,18 +209,19 @@ class Game:
         """
         Creating act boss enemy
         """
+        lvl = self.playerchar.get_lvl()
         slot_list = ['Helm', 'Armour', 'Boots', 'Ring', 'Weapon']
         act_list = {1: {'Boss': GreaterMonster,
-                        'Items': [RareItem(act + 1, slot) for slot in slot_list] + [UniqueItem(act + 1)]},
+                        'Items': [RareItem(act + lvl, slot) for slot in slot_list] + [UniqueItem(lvl)]},
                     2: {'Boss': ChampionMonster,
-                        'Items': [RareItem(act + 1, slot) for slot in slot_list] + [UniqueItem(act + 1)]},
+                        'Items': [RareItem(act + lvl, slot) for slot in slot_list] + [UniqueItem(lvl)]},
                     3: {'Boss': Summoner,
-                        'Items': [RareItem(act + 1, slot) for slot in slot_list] + [UniqueItem(act + 1)]},
+                        'Items': [RareItem(act + lvl, slot) for slot in slot_list] + [UniqueItem(lvl)]},
                     #4: DarkShadow
                     }
         if act > max(act_list.keys()):
-            act = max(act_list.keys())  # don't forget to change that!
-        boss = act_list[act]['Boss'](act + 1)
+            act = random.choice(act_list.keys())  # don't forget to change that!
+        boss = act_list[act]['Boss'](act + lvl)
         for item in act_list[act]['Items']:
             boss.add_item(item)
         boss.update_skills()
@@ -259,6 +260,9 @@ class Game:
         enemy = enemy_dict['Enemy'](act + lvl)
         for item in enemy_dict['Items']:
             enemy.add_item(item)
+        if act >= 3 and enemy.get_cls() != 'Summoner':
+            if self.roll(5):
+                enemy.add_summon(Monster(act+lvl))
         enemy.update_skills()
         self._enemy = {'Enemy': enemy, 'Type': 'Normal'}
 
@@ -473,8 +477,9 @@ class Game:
         log = DialogMessage('found_item_I', {'item': self.item.get_name()}).get_message() + "\n" + self.item.get_stats()
         if self.playerchar.get_inventory()[self.item.get_type()]:
             playeritem = self.playerchar.get_inventory()[self.item.get_type()]
-            log += f"Comparing to your *{playeritem.get_full_name()}*:"
+            log += "\n" + f"Comparing to your *{playeritem.get_full_name()}*:"
             log += self.item.get_compare_stats(playeritem)
+        log += "\n"
         log += DialogMessage('equip_item').get_message()
         self.enqueue_message(log, self._chat_id, self._player_id, self._keyboard)
         self.item_drop.pop(0)  # deleting first available item
@@ -487,7 +492,7 @@ class Game:
         if message not in self.get_state_input():
             self.enqueue_message('Please input correct command',
                                  self._chat_id, self._player_id)
-            self.enqueue_message(self.item.get_stats() + "\n\n" + DialogMessage(
+            self.enqueue_message(self.item.get_stats() + "\n" + DialogMessage(
                 'equip_item').get_message(), self._chat_id, self._player_id, self._keyboard)
         else:
             if message == 'Equip':  # adds item to playerchar inventory
@@ -553,6 +558,7 @@ class Game:
             if message == 'Magic Boost':
                 if self.playerchar.get_gold() >= 500:
                     self.playerchar.spend_gold(500)
+                    self.playerchar.set_mp(self.playerchar._mp + 5)
                     self.enqueue_message(
                         'MP Boosted', self._chat_id, self._player_id, self._keyboard)
                     self.send_stats(self.playerchar)
