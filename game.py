@@ -220,7 +220,7 @@ class Game:
                     #4: DarkShadow
                     }
         if act > max(act_list.keys()):
-            act = random.choice(act_list.keys())  # don't forget to change that!
+            act = random.choice(list(act_list))  # don't forget to change that!
         boss = act_list[act]['Boss'](act + lvl)
         for item in act_list[act]['Items']:
             boss.add_item(item)
