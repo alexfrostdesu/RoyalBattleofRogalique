@@ -43,8 +43,9 @@ class BotHandler:
         text = any string (Markdown is on)
         chat and user id - send to who
         """
+        print(f"chat_id: {chat_id}, user_id: {user_id}, message_length: {len(text)}")
         response = requests.post(self._url + "sendMessage", {'text': text, 'chat_id': chat_id, 'from': user_id, 'parse_mode': 'Markdown', 'reply_markup': keyboard})
-        print(response)
+        print(f"response: {response.status_code}")
         if response.status_code != 200:
             time.sleep(1)
         return response
