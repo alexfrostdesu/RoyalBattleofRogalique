@@ -260,7 +260,7 @@ class Game:
         enemy = enemy_dict['Enemy'](act + lvl)
         for item in enemy_dict['Items']:
             enemy.add_item(item)
-        if act >= 3 and enemy.get_cls() != 'Summoner':
+        if act >= 3 and enemy.get_class() != 'Summoner':
             if self.roll(5):
                 enemy.add_summon(Monster(act+lvl))
         enemy.update_skills()
@@ -365,7 +365,7 @@ class Game:
                 # user_list.pop(self._player_id['id'])  # deleting user character
                 self._enemy = self._boss = None
                 self._act = 1
-                print(f"Game ended for {self._chat_id, self._player_id} by {enemy.get_cls(), enemy.get_lvl()}")
+                print(f"Game ended for {self._chat_id, self._player_id} by {enemy_char.get_class(), self.playerchar.get_lvl()}")
                 # this needs to be reworked
                 self.set_state('Game Start')
                 self.enqueue_message(
@@ -478,8 +478,8 @@ class Game:
         log = DialogMessage('found_item_I', {'item': self.item.get_name()}).get_message() + "\n" + self.item.get_stats()
         if self.playerchar.get_inventory()[self.item.get_type()]:
             playeritem = self.playerchar.get_inventory()[self.item.get_type()]
-            log += "\n" + f"Comparing to your *{playeritem.get_full_name()}*:"
-            log += self.item.get_compare_stats(playeritem)
+            log += f"Comparing to your *{playeritem.get_full_name()}*:"
+            log += "\n" + self.item.get_compare_stats(playeritem)
         log += "\n"
         log += DialogMessage('equip_item').get_message()
         self.enqueue_message(log, self._chat_id, self._player_id, self._keyboard)
