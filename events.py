@@ -14,7 +14,8 @@ class DialogMessage:
             stats="Your character's stats",
             start_game="*Select your character*:\n",
             base="Do you want to go and kill some monsters? \n" + "```\nGo and find some monsters \nShow inventory \nShow stats \nGo to shop```",
-            attack_enemy="Do you want to attack? \n" + "```\nAttack the enemy \nRetreat to base```",
+            attack_enemy="Do you want to attack? \n" + "```\nAttack the enemy \nFlee to the base```",
+            attack_boss="Do you want to attack? \n" + "```\nAttack boss \nReturn to the base```",
             end_game="Your adventure ends here.",
             dead="Your character is dead.",
             equip_item="Would you like to equip item? \n" + "```\nEquip Item \nDiscard Item```")

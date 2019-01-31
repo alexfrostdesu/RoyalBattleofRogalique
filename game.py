@@ -168,10 +168,8 @@ class Game:
         # 2 act -- ChampionMonster (Monster, GreaterMonster)
         # 3 act -- Summoner (GreaterMonster, ChampionMonster)
         # 4 act -- DarkShadow (ChampionMonster, Summoner)
-        if self._boss is None:
-            self.create_boss(self._act)
-        if self._enemy is None:
-            self.create_enemy(self._act)
+        if self._boss is None or self._enemy is None:
+            self.create_enemy(self._act, self.playerchar.get_lvl())
         if message not in self.get_state_input():  # standard check for right input
             self.enqueue_message('Please input correct command', self._chat_id, self._player_id, self._keyboard)
             self.enqueue_message(DialogMessage(
@@ -205,66 +203,95 @@ class Game:
         # 3 act -- Summoner (GreaterMonster, ChampionMonster)
         # 4 act -- DarkShadow (ChampionMonster, Summoner)
 
-    def create_boss(self, act):
-        """
-        Creating act boss enemy
-        """
-        lvl = self.playerchar.get_lvl()
-        slot_list = ['Helm', 'Armour', 'Boots', 'Ring', 'Weapon']
-        act_list = {1: {'Boss': GreaterMonster,
-                        'Items': [RareItem(act + lvl, slot) for slot in slot_list] + [UniqueItem(lvl)]},
-                    2: {'Boss': ChampionMonster,
-                        'Items': [RareItem(act + lvl, slot) for slot in slot_list] + [UniqueItem(lvl)]},
-                    3: {'Boss': Summoner,
-                        'Items': [RareItem(act + lvl, slot) for slot in slot_list] + [UniqueItem(lvl)]},
-                    #4: DarkShadow
-                    }
-        if act > max(act_list.keys()):
-            act = random.choice(list(act_list))  # don't forget to change that!
-        boss = act_list[act]['Boss'](act + lvl)
-        for item in act_list[act]['Items']:
-            boss.add_item(item)
-        boss.update_skills()
-        self._boss = {'Enemy': boss, 'Type': 'Boss'}
-
-    def create_enemy(self, act):
+    def create_enemy(self, act, lvl):
         """
         Enemy spawn rules
         """
-        lvl = self.playerchar.get_lvl()
-        slot_list = ['Helm', 'Armour', 'Boots', 'Ring', 'Weapon']
-        act_list = {1: [{'Enemy': Monster,
-                        'Items': [CommonItem(lvl, slot) for slot in random.sample(slot_list, 1)]}],
-                    2: [{'Enemy': Monster,
-                        'Items': [CommonItem(lvl, slot) for slot in random.sample(slot_list, 2)]},
-                        {'Enemy': GreaterMonster,
-                         'Items': [CommonItem(lvl, slot) for slot in random.sample(slot_list, 3)] + [RareItem(lvl, slot) for slot in random.sample(slot_list, 1)]}
-                        ],
-                    3: [{'Enemy': GreaterMonster,
-                         'Items': [RareItem(lvl, slot) for slot in random.sample(slot_list, 4)]},
-                        {'Enemy': ChampionMonster,
-                         'Items': [RareItem(lvl, slot) for slot in random.sample(slot_list, 1)]}
-                        ],
-                    4: [{'Enemy': GreaterMonster,
-                         'Items': [RareItem(lvl, slot) for slot in random.sample(slot_list, 5)]},
-                        {'Enemy': ChampionMonster,
-                         'Items': [RareItem(lvl, slot) for slot in random.sample(slot_list, 5)]},
-                        {'Enemy': Summoner,
-                         'Items': [RareItem(lvl, slot) for slot in random.sample(slot_list, 5)]}
-                        ]
-                    #5: DarkShadow
-                    }
-        if act > max(act_list.keys()):
-            act = max(act_list.keys())  # don't forget to change that!
-        enemy_dict = random.choice(act_list[act])
-        enemy = enemy_dict['Enemy'](act + lvl)
-        for item in enemy_dict['Items']:
-            enemy.add_item(item)
-        if act >= 3 and enemy.get_class() != 'Summoner':
-            if self.roll(5):
-                enemy.add_summon(Monster(act+lvl))
-        enemy.update_skills()
-        self._enemy = {'Enemy': enemy, 'Type': 'Normal'}
+        def create_items(amount, rarity, custom_slots=None):
+            """
+            Creating item lists, set amount and rarity
+            if custom_slots = None, random slots
+            """
+            items = []
+            slot_list = ['Helm', 'Armour', 'Boots', 'Ring', 'Weapon']
+            item_rarity = {'Common': CommonItem,
+                           'Rare': RareItem,
+                           'Unique': UniqueItem}
+            if custom_slots and set(custom_slots).issubset(set(slot_list)):
+                slot_list = custom_slots
+            for slot in random.sample(slot_list, amount):
+                items.append(item_rarity[rarity](act+lvl, slot))
+            return items
+
+        def create_act_list(act_num):
+            """
+            Returns monster spawn rules for chosen act
+            """
+            all_acts = {1: {'Enemy': [Monster],
+                            'Items': create_items(random.randint(1, 2), 'Common'),
+                            'Boss': GreaterMonster,
+                            'Boss_items': create_items(5, 'Rare') + create_items(1, 'Unique')},
+                        2: {'Enemy': [GreaterMonster, Monster],
+                            'Items': create_items(3, 'Rare'),
+                            'Boss': ChampionMonster,
+                            'Boss_items': create_items(5, 'Rare') + create_items(1, 'Unique')},
+                        3: {'Enemy': [ChampionMonster, GreaterMonster],
+                            'Items': create_items(5, 'Rare'),
+                            'Boss': Summoner,
+                            'Boss_items': create_items(5, 'Rare') + create_items(3, 'Unique')},
+                        4: {'Enemy': [Summoner, ChampionMonster, GreaterMonster],
+                            'Items': create_items(5, 'Rare') + create_items(1, 'Unique'),
+                            'Boss': random.choice([GreaterMonster, ChampionMonster, Summoner]),
+                            'Boss_items': create_items(5, 'Unique')}
+                        }
+            if act_num > max(all_acts.keys()):
+                act_num = max(all_acts.keys())
+            return all_acts[act_num]
+
+        act_list = create_act_list(act)
+        lvl_mult = math.log10(lvl/2) + 1
+        enemy_mult = lvl_mult + act - 1
+        boss_mult = act * lvl_mult
+        if not self._enemy:
+            enemy = random.choice(act_list['Enemy'])(enemy_mult)
+            for item in act_list['Items']:
+                enemy.add_item(item)
+            if act >= 2 and enemy.get_class() != 'Summoner' and self.roll(7 - act):
+                summon = random.choice([GreaterMonster, ChampionMonster])(enemy_mult)
+                enemy.add_summon(summon)
+            self._enemy = {'Enemy': enemy, 'Type': 'Normal'}
+        if not self._boss:
+            boss = act_list['Boss'](boss_mult)
+            for item in act_list['Boss_items']:
+                boss.add_item(item)
+            if act > 4 and boss.get_class() != 'Summoner':
+                summon = random.choice([GreaterMonster, ChampionMonster])(boss_mult)
+                boss.add_summon(summon)
+            self._boss = {'Enemy': boss, 'Type': 'Boss'}
+
+    def check_enemy(self, enemy):
+        """
+        Sending message about the enemy
+        """
+        enemy_char = enemy['Enemy']
+        enemy_type = enemy['Type']
+        message_list = {'Normal': DialogMessage('see_enemy_C', {'char': enemy_char.get_class()}).get_message(),
+                        'Boss': 'You approach the boss of this act:'}
+        self.enqueue_message(message_list[enemy_type],
+                             self._chat_id, self._player_id, self._keyboard)
+        self.send_stats(enemy_char)
+        if enemy_char.get_summons():
+            self.enqueue_message("Enemy summons:",
+                                 self._chat_id, self._player_id, self._keyboard)
+            for summon in enemy_char.get_summons():
+                self.send_stats(summon)
+        # prompting to attack
+        if enemy_type == 'Boss':
+            self.enqueue_message(DialogMessage('attack_boss').get_message(),
+                                 self._chat_id, self._player_id, self._keyboard)
+        else:
+            self.enqueue_message(DialogMessage('attack_enemy').get_message(),
+                                 self._chat_id, self._player_id, self._keyboard)
 
     def boss_choice(self, message):
         """
@@ -274,7 +301,7 @@ class Game:
         if message not in self.get_state_input():  # standard check for right input
             self.enqueue_message('Please input correct command',
                                  self._chat_id, self._player_id)
-            self.enqueue_message(DialogMessage('attack_enemy').get_message(),
+            self.enqueue_message(DialogMessage('attack_boss').get_message(),
                                  self._chat_id, self._player_id, self._keyboard)
         else:
             if message == 'Attack Boss':
@@ -282,6 +309,8 @@ class Game:
                 self.battle(self._boss)
             elif message == 'Return to base':
                 self.set_state('Base')
+                self.enqueue_message("You slowly and quietly retreated to base", self._chat_id,
+                                     self._player_id, self._keyboard)
                 self.enqueue_message(DialogMessage('base').get_message(), self._chat_id, self._player_id,
                                      self._keyboard)
 
@@ -306,25 +335,6 @@ class Game:
                 self.playerchar.set_gold(self.playerchar.get_gold() / 2)
                 self.enqueue_message(DialogMessage('base').get_message(), self._chat_id, self._player_id,
                                      self._keyboard)
-
-    def check_enemy(self, enemy):
-        """
-        Sending message about the enemy
-        """
-        enemy_char = enemy['Enemy']
-        enemy_type = enemy['Type']
-        message_list = {'Normal': DialogMessage('see_enemy_C', {'char': enemy_char.get_class()}).get_message(),
-                        'Boss': 'You approach the boss of this act:'}
-        self.enqueue_message(message_list[enemy_type],
-                             self._chat_id, self._player_id, self._keyboard)
-        self.send_stats(enemy_char)
-        if enemy_char.get_summons():
-            self.enqueue_message("Enemy summons:",
-                                 self._chat_id, self._player_id, self._keyboard)
-            for summon in enemy_char.get_summons():
-                self.send_stats(summon)
-        self.enqueue_message(DialogMessage('attack_enemy').get_message(),
-                             self._chat_id, self._player_id, self._keyboard)  # prompting to attack
 
     def battle(self, enemy):
         """
