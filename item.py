@@ -147,6 +147,14 @@ class Item:
         print(f"Bonus MP: {self._bonus_mp}")
         print(f"Bonus Defence: {self._bonus_defence}")
 
+    def get_unique_bonus_stat(self):
+        bonus_list = {'Double': 'Doubles this item main stat',
+                      'Shiny': 'Boosts this item stats',
+                      'Chiseled': f'All {self.get_unique_bonus()[0]} bonuses +{(self.get_unique_bonus()[1] - 1) * 100:1.1f}%',
+                      'Decorated': f'All items bonuses +{(self.get_unique_bonus()[1] - 1) * 100:1.1f}%'}
+        return f"```\nUnique bonus: ".ljust(
+            15) + f"| {bonus_list[self.get_prefix()]}```"
+
     def get_stats(self):
         stats = f"*{self.get_full_name()}*\n" + \
                 f"```\nBonus Damage: ".ljust(15) + f"| {self._bonus_attack}" + \
@@ -154,11 +162,7 @@ class Item:
                 f"\nBonus MP:".ljust(15) + f"| {self._bonus_mp}" + \
                 f"\nBonus Defence:".ljust(15) + f"| {self._bonus_defence}```"
         if self.get_unique_bonus():
-            bonus_list = {'Double': 'Doubles this item main stat',
-                          'Shiny': 'Boosts this item stats',
-                          'Chiseled': f'All {self.get_unique_bonus()[0]} bonuses +{(self.get_unique_bonus()[1] - 1) * 100:1.1f}%',
-                          'Decorated': f'All items bonuses +{(self.get_unique_bonus()[1] - 1) * 100:1.1f}%'}
-            stats += f"```\nUnique bonus: ".ljust(15) + f"| {bonus_list[self.get_prefix()]}```"
+            stats += self.get_unique_bonus_stat()
         return stats
 
     def get_compare_stats(self, other_item):
@@ -167,6 +171,8 @@ class Item:
                 f"\nBonus HP:".ljust(15) + f"| {self._bonus_hp}".ljust(5) + f"({self._bonus_hp - other_item.get_bonus_hp()})" + \
                 f"\nBonus MP:".ljust(15) + f"| {self._bonus_mp}".ljust(5) + f"({self._bonus_mp - other_item.get_bonus_mp()})" + \
                 f"\nBonus Defence:".ljust(15) + f"| {self._bonus_defence}".ljust(5) + f"({self._bonus_defence - other_item.get_bonus_defence()})```"
+        if self.get_unique_bonus():
+            stats += self.get_unique_bonus_stat()
         return stats
 
 
