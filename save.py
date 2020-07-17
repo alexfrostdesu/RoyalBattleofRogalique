@@ -1,6 +1,7 @@
 import pickle, redis, os
 
-REDIS_URL = os.environ["REDIS_URL"]
+REDIS_URL = os.environ.get("REDIS_URL")
+
 
 class RedisConnection(object):
 

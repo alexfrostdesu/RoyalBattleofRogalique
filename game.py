@@ -5,7 +5,7 @@ import random
 import os
 import traceback, functools, json
 
-TOKEN = os.environ["TOKEN"]
+TOKEN = os.environ.get("TOKEN")
 
 
 class OutMessage():

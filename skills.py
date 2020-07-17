@@ -321,7 +321,8 @@ class Evasion(DefenceSkill):
         """
         Returns spell's evasion chance
         """
-        return self._evasion_chance + 0.001 * self.get_owner_stats()['MP']
+        evasion = self._evasion_chance + 0.001 * self.get_owner_stats()['MP']
+        return evasion if evasion <= 0.6 else 0.6
 
     def set_evasion_chance(self, amount):
         """
