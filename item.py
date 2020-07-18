@@ -153,14 +153,14 @@ class Item:
                       'Chiseled': f'All {self.get_unique_bonus()[0]} bonuses +{(self.get_unique_bonus()[1] - 1) * 100:1.1f}%',
                       'Decorated': f'All items bonuses +{(self.get_unique_bonus()[1] - 1) * 100:1.1f}%'}
         return f"```\nUnique bonus: ".ljust(
-            15) + f"| {bonus_list[self.get_prefix()]}```"
+            15) + f"| {bonus_list[self.get_prefix()]}```\n"
 
     def get_stats(self):
         stats = f"*{self.get_full_name()}*\n" + \
                 f"```\nBonus Damage: ".ljust(15) + f"| {self._bonus_attack}" + \
                 f"\nBonus HP:".ljust(15) + f"| {self._bonus_hp}" + \
                 f"\nBonus MP:".ljust(15) + f"| {self._bonus_mp}" + \
-                f"\nBonus Defence:".ljust(15) + f"| {self._bonus_defence}```"
+                f"\nBonus Defence:".ljust(15) + f"| {self._bonus_defence}```\n"
         if self.get_unique_bonus():
             stats += self.get_unique_bonus_stat()
         return stats
