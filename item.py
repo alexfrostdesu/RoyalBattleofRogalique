@@ -170,9 +170,9 @@ class Item:
                 f"```\nBonus Damage: ".ljust(15) + f"| {self._bonus_attack}".ljust(5) + f"({self._bonus_attack - other_item.get_bonus_attack()})" + \
                 f"\nBonus HP:".ljust(15) + f"| {self._bonus_hp}".ljust(5) + f"({self._bonus_hp - other_item.get_bonus_hp()})" + \
                 f"\nBonus MP:".ljust(15) + f"| {self._bonus_mp}".ljust(5) + f"({self._bonus_mp - other_item.get_bonus_mp()})" + \
-                f"\nBonus Defence:".ljust(15) + f"| {self._bonus_defence}".ljust(5) + f"({self._bonus_defence - other_item.get_bonus_defence()})```"
+                f"\nBonus Defence:".ljust(15) + f"| {self._bonus_defence}".ljust(5) + f"({self._bonus_defence - other_item.get_bonus_defence()})\n```"
         if self.get_unique_bonus():
-            stats += self.get_unique_bonus_stat()
+            stats += other_item.get_unique_bonus_stat()
         return stats
 
 
